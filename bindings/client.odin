@@ -621,19 +621,19 @@ Event_Queue :: struct {
 @(default_calling_convention="c", link_prefix="wl_")
 foreign wl {
 	event_queue_destroy                       :: proc(queue: ^Event_Queue) ---
-	proxy_marshal_flags                       :: proc(proxy: ^Proxy, opcode: u32, interface: ^Interface, version: u32, flags: u32) -> ^Proxy ---
-	proxy_marshal_array_flags                 :: proc(proxy: ^Proxy, opcode: u32, interface: ^Interface, version: u32, flags: u32, args: ^Argument) -> ^Proxy ---
-	proxy_marshal                             :: proc(p: ^Proxy, opcode: u32) ---
-	proxy_marshal_array                       :: proc(p: ^Proxy, opcode: u32, args: ^Argument) ---
+	proxy_marshal_flags                       :: proc(proxy: ^Proxy, opcode: u32, interface: ^Interface, version: u32, flags: u32, #c_vararg args: ..any) -> ^Proxy ---
+	proxy_marshal_array_flags                 :: proc(proxy: ^Proxy, opcode: u32, interface: ^Interface, version: u32, flags: u32, args: [^]Argument) -> ^Proxy ---
+	proxy_marshal                             :: proc(p: ^Proxy, opcode: u32, #c_vararg args: ..any) ---
+	proxy_marshal_array                       :: proc(p: ^Proxy, opcode: u32, args: [^]Argument) ---
 	proxy_create                              :: proc(factory: ^Proxy, interface: ^Interface) -> ^Proxy ---
 	proxy_create_wrapper                      :: proc(proxy: rawptr) -> rawptr ---
 	proxy_wrapper_destroy                     :: proc(proxy_wrapper: rawptr) ---
-	proxy_marshal_constructor                 :: proc(proxy: ^Proxy, opcode: u32, interface: ^Interface) -> ^Proxy ---
-	proxy_marshal_constructor_versioned       :: proc(proxy: ^Proxy, opcode: u32, interface: ^Interface, version: u32) -> ^Proxy ---
-	proxy_marshal_array_constructor           :: proc(proxy: ^Proxy, opcode: u32, args: ^Argument, interface: ^Interface) -> ^Proxy ---
-	proxy_marshal_array_constructor_versioned :: proc(proxy: ^Proxy, opcode: u32, args: ^Argument, interface: ^Interface, version: u32) -> ^Proxy ---
+	proxy_marshal_constructor                 :: proc(proxy: ^Proxy, opcode: u32, interface: ^Interface, #c_vararg args: ..any) -> ^Proxy ---
+	proxy_marshal_constructor_versioned       :: proc(proxy: ^Proxy, opcode: u32, interface: ^Interface, version: u32, #c_vararg args: ..any) -> ^Proxy ---
+	proxy_marshal_array_constructor           :: proc(proxy: ^Proxy, opcode: u32, args: [^]Argument, interface: ^Interface) -> ^Proxy ---
+	proxy_marshal_array_constructor_versioned :: proc(proxy: ^Proxy, opcode: u32, args: [^]Argument, interface: ^Interface, version: u32) -> ^Proxy ---
 	proxy_destroy                             :: proc(proxy: ^Proxy) ---
-	proxy_add_listener                        :: proc(proxy: ^Proxy, implementation: [^]proc(), data: rawptr) -> i32 ---
+	proxy_add_listener                        :: proc(proxy: ^Proxy, implementation: rawptr, data: rawptr) -> i32 ---
 	proxy_get_listener                        :: proc(proxy: ^Proxy) -> rawptr ---
 	proxy_add_dispatcher                      :: proc(proxy: ^Proxy, dispatcher_func: Dispatcher_Func, dispatcher_data: rawptr, data: rawptr) -> i32 ---
 	proxy_set_user_data                       :: proc(proxy: ^Proxy, user_data: rawptr) ---

@@ -16,6 +16,7 @@ Arg :: struct {
     name: string,
     type: string,
     interface: string,
+    interface_type: string,
     summary: string
 }
 
@@ -74,7 +75,7 @@ parse_description :: proc(elem: xml.Element) -> (desc: Description) {
     return
 }
 
-parse_arg :: proc(elem: xml.Element) -> (arg: Arg) {
+parse_arg :: proc(elem: xml.Element) -> (arg: Arg, err: mem.Allocator_Error) {
     for attr in elem.attribs {
         switch attr.key {
         case "name":
@@ -98,6 +99,7 @@ parse_arg :: proc(elem: xml.Element) -> (arg: Arg) {
             }
         case "interface":
             arg.interface = attr.val[3:]
+            arg.interface_type = strings.to_ada_case(attr.val[3:]) or_return
         case "summary":
             arg.summary = attr.val
         }
@@ -126,12 +128,12 @@ parse_request :: proc(elems: []xml.Element, elem: xml.Element, iface_name: strin
         case "description":
             req.description = parse_description(child_elem)
         case "arg":
-            arg := parse_arg(child_elem)
+            arg := parse_arg(child_elem) or_return
             if arg.type == "Interface" {
                 req.return_arg = arg
-            } else {
-                append(&req.args, arg)
             }
+
+            append(&req.args, arg)
         }
     }
 
@@ -156,7 +158,7 @@ parse_event :: proc(elems: []xml.Element, elem: xml.Element) -> (ev: Event, err:
         case "description":
             ev.description = parse_description(child_elem)
         case "arg":
-            append(&ev.args, parse_arg(child_elem))
+            append(&ev.args, parse_arg(child_elem) or_return)
         }
     }
 
@@ -308,23 +310,40 @@ gen_request :: proc(req: Request, index: int, iface_name: string, iface_type_nam
 
     fmt.sbprintf(&b, "    %s: ^%s,\n", iface_name, iface_type_name)
 
+    r_arg, r_ok := req.return_arg.(Arg)
+    r_empty_iface: bool
+    itype: string
+
+    if r_ok {
+        if r_empty_iface = r_arg.interface == ""; r_empty_iface {
+            itype = "rawptr"
+        } else {
+            itype = strings.concatenate({"^", r_arg.interface_type}) or_return
+        }
+    }
+
     for arg in req.args {
-        fmt.sbprintf(&b, "    // %s \n", arg.summary)
-        fmt.sbprintf(&b, "    %s: %s,\n", arg.name, arg.type)
+        if arg.type == "Interface" {
+            if r_empty_iface {
+                fmt.sbprint(&b, "    interface: ^Interface,\n")
+                fmt.sbprint(&b, "    version: uint,\n")
+            }
+        } else {
+            fmt.sbprintf(&b, "    // %s \n", arg.summary)
+            fmt.sbprintf(&b, "    %s: %s,\n", arg.name, arg.type)
+        }
     }
 
     fmt.sbprint(&b, ")")
 
-    r_arg, r_ok := req.return_arg.(Arg)
-
     if r_ok {
-        fmt.sbprintf(&b, " -> (%s: /* %s */ %s) ", r_arg.name, r_arg.summary, r_arg.type)
+        fmt.sbprintf(&b, " -> (%s: /* %s */ %s) ", r_arg.name, r_arg.summary, itype)
     }
 
     fmt.sbprint(&b, "{\n")
 
     if r_ok {
-        fmt.sbprintf(&b, "    %s = ", r_arg.name)
+        fmt.sbprintf(&b, "    %s = cast(%s)", r_arg.name, itype)
     } else {
         fmt.sbprint(&b, "    ")
     }
@@ -334,26 +353,38 @@ gen_request :: proc(req: Request, index: int, iface_name: string, iface_type_nam
     fmt.sbprintf(&b, "        %d,\n", index)
 
     if r_ok {
-        fmt.sbprintf(&b, "        &%s_interface,\n", r_arg.interface)
+        if r_empty_iface {
+            fmt.sbprint(&b, "        interface,\n")
+        } else {
+            fmt.sbprintf(&b, "        &%s_interface,\n", r_arg.interface)
+        }
     } else {
         fmt.sbprint(&b, "        nil,\n")
     }
 
-    fmt.sbprintf(&b, "        proxy_get_version(cast(^Proxy)%s),\n", iface_name)
+    if r_ok && r_empty_iface {
+        fmt.sbprint(&b, "        u32(version),\n")
+    } else {
+        fmt.sbprintf(&b, "        proxy_get_version(cast(^Proxy)%s),\n", iface_name)
+    }
+
     fmt.sbprint(&b, "        {},\n")
 
-    if len(req.args) == 0 {
+    for arg in req.args {
+        if arg.type == "Interface" {
             fmt.sbprint(&b, "        nil,\n")
-    } else {
-        for arg in req.args {
+            if r_empty_iface {
+                fmt.sbprint(&b, "        interface.name,\n")
+                fmt.sbprint(&b, "        version,\n")
+            }
+        } else {
             fmt.sbprintf(&b, "        %s,\n", arg.name)
         }
     }
 
-
     fmt.sbprint(&b, "    )\n")
 
-    fmt.sbprint(&b, "}\n")
+    fmt.sbprint(&b, "    return\n}\n")
 
     s = strings.to_string(b)
 
@@ -361,7 +392,7 @@ gen_request :: proc(req: Request, index: int, iface_name: string, iface_type_nam
 }
 
 PROXY_ADD_LISTENER_FMT :: `
-%[0]s_add_listener :: proc(%[0]s: ^%[1]s, implementation: ^%[1]s_Listener, data: rawptr) -> int {{
+%[0]s_add_listener :: proc(%[0]s: ^%[1]s, implementation: ^%[1]s_Listener, data: rawptr) -> i32 {{
     return proxy_add_listener(
         cast(^Proxy)%[0]s,
         implementation,

@@ -53,7 +53,7 @@ Display_Listener :: struct {
 }
 
 
-display_add_listener :: proc(display: ^Display, implementation: ^Display_Listener, data: rawptr) -> int {
+display_add_listener :: proc(display: ^Display, implementation: ^Display_Listener, data: rawptr) -> i32 {
     return proxy_add_listener(
         cast(^Proxy)display,
         implementation,
@@ -75,8 +75,8 @@ display_add_listener :: proc(display: ^Display, implementation: ^Display_Listene
 // The callback_data passed in the callback is undefined and should be ignored. 
 display_sync :: proc(
     display: ^Display,
-) -> (callback: /* callback object for the sync request */ Interface) {
-    callback = proxy_marshal_flags(
+) -> (callback: /* callback object for the sync request */ ^Callback) {
+    callback = cast(^Callback)proxy_marshal_flags(
         cast(^Proxy)display,
         0,
         &callback_interface,
@@ -84,6 +84,7 @@ display_sync :: proc(
         {},
         nil,
     )
+    return
 }
 
 // get global registry object 
@@ -98,8 +99,8 @@ display_sync :: proc(
 // possible to avoid wasting memory. 
 display_get_registry :: proc(
     display: ^Display,
-) -> (registry: /* global registry object */ Interface) {
-    registry = proxy_marshal_flags(
+) -> (registry: /* global registry object */ ^Registry) {
+    registry = cast(^Registry)proxy_marshal_flags(
         cast(^Proxy)display,
         1,
         &registry_interface,
@@ -107,6 +108,7 @@ display_get_registry :: proc(
         {},
         nil,
     )
+    return
 }
 
 
@@ -172,7 +174,7 @@ Registry_Listener :: struct {
 }
 
 
-registry_add_listener :: proc(registry: ^Registry, implementation: ^Registry_Listener, data: rawptr) -> int {
+registry_add_listener :: proc(registry: ^Registry, implementation: ^Registry_Listener, data: rawptr) -> i32 {
     return proxy_add_listener(
         cast(^Proxy)registry,
         implementation,
@@ -187,15 +189,21 @@ registry_bind :: proc(
     registry: ^Registry,
     // unique numeric name of the object 
     name: uint,
-) -> (id: /* bounded object */ Interface) {
-    id = proxy_marshal_flags(
+    interface: ^Interface,
+    version: uint,
+) -> (id: /* bounded object */ rawptr) {
+    id = cast(rawptr)proxy_marshal_flags(
         cast(^Proxy)registry,
         0,
-        &_interface,
-        proxy_get_version(cast(^Proxy)registry),
+        interface,
+        u32(version),
         {},
         name,
+        nil,
+        interface.name,
+        version,
     )
+    return
 }
 
 
@@ -221,7 +229,7 @@ Callback_Listener :: struct {
 }
 
 
-callback_add_listener :: proc(callback: ^Callback, implementation: ^Callback_Listener, data: rawptr) -> int {
+callback_add_listener :: proc(callback: ^Callback, implementation: ^Callback_Listener, data: rawptr) -> i32 {
     return proxy_add_listener(
         cast(^Proxy)callback,
         implementation,
@@ -242,7 +250,7 @@ Compositor_Listener :: struct {
 }
 
 
-compositor_add_listener :: proc(compositor: ^Compositor, implementation: ^Compositor_Listener, data: rawptr) -> int {
+compositor_add_listener :: proc(compositor: ^Compositor, implementation: ^Compositor_Listener, data: rawptr) -> i32 {
     return proxy_add_listener(
         cast(^Proxy)compositor,
         implementation,
@@ -254,8 +262,8 @@ compositor_add_listener :: proc(compositor: ^Compositor, implementation: ^Compos
 // Ask the compositor to create a new surface. 
 compositor_create_surface :: proc(
     compositor: ^Compositor,
-) -> (id: /* the new surface */ Interface) {
-    id = proxy_marshal_flags(
+) -> (id: /* the new surface */ ^Surface) {
+    id = cast(^Surface)proxy_marshal_flags(
         cast(^Proxy)compositor,
         0,
         &surface_interface,
@@ -263,14 +271,15 @@ compositor_create_surface :: proc(
         {},
         nil,
     )
+    return
 }
 
 // create new region 
 // Ask the compositor to create a new region. 
 compositor_create_region :: proc(
     compositor: ^Compositor,
-) -> (id: /* the new region */ Interface) {
-    id = proxy_marshal_flags(
+) -> (id: /* the new region */ ^Region) {
+    id = cast(^Region)proxy_marshal_flags(
         cast(^Proxy)compositor,
         1,
         &region_interface,
@@ -278,6 +287,7 @@ compositor_create_region :: proc(
         {},
         nil,
     )
+    return
 }
 
 
@@ -297,7 +307,7 @@ Shm_Pool_Listener :: struct {
 }
 
 
-shm_pool_add_listener :: proc(shm_pool: ^Shm_Pool, implementation: ^Shm_Pool_Listener, data: rawptr) -> int {
+shm_pool_add_listener :: proc(shm_pool: ^Shm_Pool, implementation: ^Shm_Pool_Listener, data: rawptr) -> i32 {
     return proxy_add_listener(
         cast(^Proxy)shm_pool,
         implementation,
@@ -329,19 +339,21 @@ shm_pool_create_buffer :: proc(
     stride: int,
     // buffer pixel format 
     format: uint,
-) -> (id: /* buffer to create */ Interface) {
-    id = proxy_marshal_flags(
+) -> (id: /* buffer to create */ ^Buffer) {
+    id = cast(^Buffer)proxy_marshal_flags(
         cast(^Proxy)shm_pool,
         0,
         &buffer_interface,
         proxy_get_version(cast(^Proxy)shm_pool),
         {},
+        nil,
         offset,
         width,
         height,
         stride,
         format,
     )
+    return
 }
 
 // destroy the pool 
@@ -359,8 +371,8 @@ shm_pool_destroy :: proc(
         nil,
         proxy_get_version(cast(^Proxy)shm_pool),
         {},
-        nil,
     )
+    return
 }
 
 // change the size of the pool mapping 
@@ -387,6 +399,7 @@ shm_pool_resize :: proc(
         {},
         size,
     )
+    return
 }
 
 
@@ -691,7 +704,7 @@ Shm_Listener :: struct {
 }
 
 
-shm_add_listener :: proc(shm: ^Shm, implementation: ^Shm_Listener, data: rawptr) -> int {
+shm_add_listener :: proc(shm: ^Shm, implementation: ^Shm_Listener, data: rawptr) -> i32 {
     return proxy_add_listener(
         cast(^Proxy)shm,
         implementation,
@@ -711,16 +724,18 @@ shm_create_pool :: proc(
     fd: i32,
     // pool size, in bytes 
     size: int,
-) -> (id: /* pool to create */ Interface) {
-    id = proxy_marshal_flags(
+) -> (id: /* pool to create */ ^Shm_Pool) {
+    id = cast(^Shm_Pool)proxy_marshal_flags(
         cast(^Proxy)shm,
         0,
         &shm_pool_interface,
         proxy_get_version(cast(^Proxy)shm),
         {},
+        nil,
         fd,
         size,
     )
+    return
 }
 
 // release the shm object 
@@ -737,8 +752,8 @@ shm_release :: proc(
         nil,
         proxy_get_version(cast(^Proxy)shm),
         {},
-        nil,
     )
+    return
 }
 
 
@@ -783,7 +798,7 @@ Buffer_Listener :: struct {
 }
 
 
-buffer_add_listener :: proc(buffer: ^Buffer, implementation: ^Buffer_Listener, data: rawptr) -> int {
+buffer_add_listener :: proc(buffer: ^Buffer, implementation: ^Buffer_Listener, data: rawptr) -> i32 {
     return proxy_add_listener(
         cast(^Proxy)buffer,
         implementation,
@@ -805,8 +820,8 @@ buffer_destroy :: proc(
         nil,
         proxy_get_version(cast(^Proxy)buffer),
         {},
-        nil,
     )
+    return
 }
 
 
@@ -900,7 +915,7 @@ Data_Offer_Listener :: struct {
 }
 
 
-data_offer_add_listener :: proc(data_offer: ^Data_Offer, implementation: ^Data_Offer_Listener, data: rawptr) -> int {
+data_offer_add_listener :: proc(data_offer: ^Data_Offer, implementation: ^Data_Offer_Listener, data: rawptr) -> i32 {
     return proxy_add_listener(
         cast(^Proxy)data_offer,
         implementation,
@@ -939,6 +954,7 @@ data_offer_accept :: proc(
         serial,
         mime_type,
     )
+    return
 }
 
 // request that the data is transferred 
@@ -973,6 +989,7 @@ data_offer_receive :: proc(
         mime_type,
         fd,
     )
+    return
 }
 
 // destroy data offer 
@@ -986,8 +1003,8 @@ data_offer_destroy :: proc(
         nil,
         proxy_get_version(cast(^Proxy)data_offer),
         {},
-        nil,
     )
+    return
 }
 
 // the offer will no longer be used 
@@ -1014,8 +1031,8 @@ data_offer_finish :: proc(
         nil,
         proxy_get_version(cast(^Proxy)data_offer),
         {},
-        nil,
     )
+    return
 }
 
 // set the available/preferred drag-and-drop actions 
@@ -1066,6 +1083,7 @@ data_offer_set_actions :: proc(
         dnd_actions,
         preferred_action,
     )
+    return
 }
 
 
@@ -1196,7 +1214,7 @@ Data_Source_Listener :: struct {
 }
 
 
-data_source_add_listener :: proc(data_source: ^Data_Source, implementation: ^Data_Source_Listener, data: rawptr) -> int {
+data_source_add_listener :: proc(data_source: ^Data_Source, implementation: ^Data_Source_Listener, data: rawptr) -> i32 {
     return proxy_add_listener(
         cast(^Proxy)data_source,
         implementation,
@@ -1221,6 +1239,7 @@ data_source_offer :: proc(
         {},
         mime_type,
     )
+    return
 }
 
 // destroy the data source 
@@ -1234,8 +1253,8 @@ data_source_destroy :: proc(
         nil,
         proxy_get_version(cast(^Proxy)data_source),
         {},
-        nil,
     )
+    return
 }
 
 // set the available drag-and-drop actions 
@@ -1265,6 +1284,7 @@ data_source_set_actions :: proc(
         {},
         dnd_actions,
     )
+    return
 }
 
 
@@ -1384,7 +1404,7 @@ Data_Device_Listener :: struct {
 }
 
 
-data_device_add_listener :: proc(data_device: ^Data_Device, implementation: ^Data_Device_Listener, data: rawptr) -> int {
+data_device_add_listener :: proc(data_device: ^Data_Device, implementation: ^Data_Device_Listener, data: rawptr) -> i32 {
     return proxy_add_listener(
         cast(^Proxy)data_device,
         implementation,
@@ -1444,6 +1464,7 @@ data_device_start_drag :: proc(
         icon,
         serial,
     )
+    return
 }
 
 // copy data to the selection 
@@ -1471,6 +1492,7 @@ data_device_set_selection :: proc(
         source,
         serial,
     )
+    return
 }
 
 // destroy data device 
@@ -1484,8 +1506,8 @@ data_device_release :: proc(
         nil,
         proxy_get_version(cast(^Proxy)data_device),
         {},
-        nil,
     )
+    return
 }
 
 
@@ -1543,7 +1565,7 @@ Data_Device_Manager_Listener :: struct {
 }
 
 
-data_device_manager_add_listener :: proc(data_device_manager: ^Data_Device_Manager, implementation: ^Data_Device_Manager_Listener, data: rawptr) -> int {
+data_device_manager_add_listener :: proc(data_device_manager: ^Data_Device_Manager, implementation: ^Data_Device_Manager_Listener, data: rawptr) -> i32 {
     return proxy_add_listener(
         cast(^Proxy)data_device_manager,
         implementation,
@@ -1555,8 +1577,8 @@ data_device_manager_add_listener :: proc(data_device_manager: ^Data_Device_Manag
 // Create a new data source. 
 data_device_manager_create_data_source :: proc(
     data_device_manager: ^Data_Device_Manager,
-) -> (id: /* data source to create */ Interface) {
-    id = proxy_marshal_flags(
+) -> (id: /* data source to create */ ^Data_Source) {
+    id = cast(^Data_Source)proxy_marshal_flags(
         cast(^Proxy)data_device_manager,
         0,
         &data_source_interface,
@@ -1564,6 +1586,7 @@ data_device_manager_create_data_source :: proc(
         {},
         nil,
     )
+    return
 }
 
 // create a new data device 
@@ -1572,15 +1595,17 @@ data_device_manager_get_data_device :: proc(
     data_device_manager: ^Data_Device_Manager,
     // seat associated with the data device 
     seat: Object,
-) -> (id: /* data device to create */ Interface) {
-    id = proxy_marshal_flags(
+) -> (id: /* data device to create */ ^Data_Device) {
+    id = cast(^Data_Device)proxy_marshal_flags(
         cast(^Proxy)data_device_manager,
         1,
         &data_device_interface,
         proxy_get_version(cast(^Proxy)data_device_manager),
         {},
+        nil,
         seat,
     )
+    return
 }
 
 
@@ -1609,7 +1634,7 @@ Shell_Listener :: struct {
 }
 
 
-shell_add_listener :: proc(shell: ^Shell, implementation: ^Shell_Listener, data: rawptr) -> int {
+shell_add_listener :: proc(shell: ^Shell, implementation: ^Shell_Listener, data: rawptr) -> i32 {
     return proxy_add_listener(
         cast(^Proxy)shell,
         implementation,
@@ -1627,15 +1652,17 @@ shell_get_shell_surface :: proc(
     shell: ^Shell,
     // surface to be given the shell surface role 
     surface: Object,
-) -> (id: /* shell surface to create */ Interface) {
-    id = proxy_marshal_flags(
+) -> (id: /* shell surface to create */ ^Shell_Surface) {
+    id = cast(^Shell_Surface)proxy_marshal_flags(
         cast(^Proxy)shell,
         0,
         &shell_surface_interface,
         proxy_get_version(cast(^Proxy)shell),
         {},
+        nil,
         surface,
     )
+    return
 }
 
 
@@ -1753,7 +1780,7 @@ Shell_Surface_Listener :: struct {
 }
 
 
-shell_surface_add_listener :: proc(shell_surface: ^Shell_Surface, implementation: ^Shell_Surface_Listener, data: rawptr) -> int {
+shell_surface_add_listener :: proc(shell_surface: ^Shell_Surface, implementation: ^Shell_Surface_Listener, data: rawptr) -> i32 {
     return proxy_add_listener(
         cast(^Proxy)shell_surface,
         implementation,
@@ -1777,6 +1804,7 @@ shell_surface_pong :: proc(
         {},
         serial,
     )
+    return
 }
 
 // start an interactive move 
@@ -1801,6 +1829,7 @@ shell_surface_move :: proc(
         seat,
         serial,
     )
+    return
 }
 
 // start an interactive resize 
@@ -1828,6 +1857,7 @@ shell_surface_resize :: proc(
         serial,
         edges,
     )
+    return
 }
 
 // make the surface a toplevel surface 
@@ -1843,8 +1873,8 @@ shell_surface_set_toplevel :: proc(
         nil,
         proxy_get_version(cast(^Proxy)shell_surface),
         {},
-        nil,
     )
+    return
 }
 
 // make the surface a transient surface 
@@ -1877,6 +1907,7 @@ shell_surface_set_transient :: proc(
         y,
         flags,
     )
+    return
 }
 
 // make the surface a fullscreen surface 
@@ -1932,6 +1963,7 @@ shell_surface_set_fullscreen :: proc(
         framerate,
         output,
     )
+    return
 }
 
 // make the surface a popup surface 
@@ -1982,6 +2014,7 @@ shell_surface_set_popup :: proc(
         y,
         flags,
     )
+    return
 }
 
 // make the surface a maximized surface 
@@ -2016,6 +2049,7 @@ shell_surface_set_maximized :: proc(
         {},
         output,
     )
+    return
 }
 
 // set surface title 
@@ -2039,6 +2073,7 @@ shell_surface_set_title :: proc(
         {},
         title,
     )
+    return
 }
 
 // set surface class 
@@ -2061,6 +2096,7 @@ shell_surface_set_class :: proc(
         {},
         class_,
     )
+    return
 }
 
 
@@ -2193,7 +2229,7 @@ Surface_Listener :: struct {
 }
 
 
-surface_add_listener :: proc(surface: ^Surface, implementation: ^Surface_Listener, data: rawptr) -> int {
+surface_add_listener :: proc(surface: ^Surface, implementation: ^Surface_Listener, data: rawptr) -> i32 {
     return proxy_add_listener(
         cast(^Proxy)surface,
         implementation,
@@ -2212,8 +2248,8 @@ surface_destroy :: proc(
         nil,
         proxy_get_version(cast(^Proxy)surface),
         {},
-        nil,
     )
+    return
 }
 
 // set the surface contents 
@@ -2300,6 +2336,7 @@ surface_attach :: proc(
         x,
         y,
     )
+    return
 }
 
 // mark part of the surface damaged 
@@ -2346,6 +2383,7 @@ surface_damage :: proc(
         width,
         height,
     )
+    return
 }
 
 // request a frame throttling hint 
@@ -2383,8 +2421,8 @@ surface_damage :: proc(
 // milliseconds, with an undefined base. 
 surface_frame :: proc(
     surface: ^Surface,
-) -> (callback: /* callback object for the frame request */ Interface) {
-    callback = proxy_marshal_flags(
+) -> (callback: /* callback object for the frame request */ ^Callback) {
+    callback = cast(^Callback)proxy_marshal_flags(
         cast(^Proxy)surface,
         3,
         &callback_interface,
@@ -2392,6 +2430,7 @@ surface_frame :: proc(
         {},
         nil,
     )
+    return
 }
 
 // set opaque region 
@@ -2432,6 +2471,7 @@ surface_set_opaque_region :: proc(
         {},
         region,
     )
+    return
 }
 
 // set input region 
@@ -2470,6 +2510,7 @@ surface_set_input_region :: proc(
         {},
         region,
     )
+    return
 }
 
 // commit pending surface state 
@@ -2501,8 +2542,8 @@ surface_commit :: proc(
         nil,
         proxy_get_version(cast(^Proxy)surface),
         {},
-        nil,
     )
+    return
 }
 
 // sets the buffer transformation 
@@ -2550,6 +2591,7 @@ surface_set_buffer_transform :: proc(
         {},
         transform,
     )
+    return
 }
 
 // sets the buffer scaling factor 
@@ -2589,6 +2631,7 @@ surface_set_buffer_scale :: proc(
         {},
         scale,
     )
+    return
 }
 
 // mark part of the surface damaged using buffer coordinates 
@@ -2646,6 +2689,7 @@ surface_damage_buffer :: proc(
         width,
         height,
     )
+    return
 }
 
 // set the surface contents offset 
@@ -2680,6 +2724,7 @@ surface_offset :: proc(
         x,
         y,
     )
+    return
 }
 
 
@@ -2769,7 +2814,7 @@ Seat_Listener :: struct {
 }
 
 
-seat_add_listener :: proc(seat: ^Seat, implementation: ^Seat_Listener, data: rawptr) -> int {
+seat_add_listener :: proc(seat: ^Seat, implementation: ^Seat_Listener, data: rawptr) -> i32 {
     return proxy_add_listener(
         cast(^Proxy)seat,
         implementation,
@@ -2788,8 +2833,8 @@ seat_add_listener :: proc(seat: ^Seat, implementation: ^Seat_Listener, data: raw
 // be sent in this case. 
 seat_get_pointer :: proc(
     seat: ^Seat,
-) -> (id: /* seat pointer */ Interface) {
-    id = proxy_marshal_flags(
+) -> (id: /* seat pointer */ ^Pointer) {
+    id = cast(^Pointer)proxy_marshal_flags(
         cast(^Proxy)seat,
         0,
         &pointer_interface,
@@ -2797,6 +2842,7 @@ seat_get_pointer :: proc(
         {},
         nil,
     )
+    return
 }
 
 // return keyboard object 
@@ -2810,8 +2856,8 @@ seat_get_pointer :: proc(
 // be sent in this case. 
 seat_get_keyboard :: proc(
     seat: ^Seat,
-) -> (id: /* seat keyboard */ Interface) {
-    id = proxy_marshal_flags(
+) -> (id: /* seat keyboard */ ^Keyboard) {
+    id = cast(^Keyboard)proxy_marshal_flags(
         cast(^Proxy)seat,
         1,
         &keyboard_interface,
@@ -2819,6 +2865,7 @@ seat_get_keyboard :: proc(
         {},
         nil,
     )
+    return
 }
 
 // return touch object 
@@ -2832,8 +2879,8 @@ seat_get_keyboard :: proc(
 // be sent in this case. 
 seat_get_touch :: proc(
     seat: ^Seat,
-) -> (id: /* seat touch interface */ Interface) {
-    id = proxy_marshal_flags(
+) -> (id: /* seat touch interface */ ^Touch) {
+    id = cast(^Touch)proxy_marshal_flags(
         cast(^Proxy)seat,
         2,
         &touch_interface,
@@ -2841,6 +2888,7 @@ seat_get_touch :: proc(
         {},
         nil,
     )
+    return
 }
 
 // release the seat object 
@@ -2855,8 +2903,8 @@ seat_release :: proc(
         nil,
         proxy_get_version(cast(^Proxy)seat),
         {},
-        nil,
     )
+    return
 }
 
 
@@ -3249,7 +3297,7 @@ Pointer_Listener :: struct {
 }
 
 
-pointer_add_listener :: proc(pointer: ^Pointer, implementation: ^Pointer_Listener, data: rawptr) -> int {
+pointer_add_listener :: proc(pointer: ^Pointer, implementation: ^Pointer_Listener, data: rawptr) -> i32 {
     return proxy_add_listener(
         cast(^Proxy)pointer,
         implementation,
@@ -3313,6 +3361,7 @@ pointer_set_cursor :: proc(
         hotspot_x,
         hotspot_y,
     )
+    return
 }
 
 // release the pointer object 
@@ -3330,8 +3379,8 @@ pointer_release :: proc(
         nil,
         proxy_get_version(cast(^Proxy)pointer),
         {},
-        nil,
     )
+    return
 }
 
 
@@ -3530,7 +3579,7 @@ Keyboard_Listener :: struct {
 }
 
 
-keyboard_add_listener :: proc(keyboard: ^Keyboard, implementation: ^Keyboard_Listener, data: rawptr) -> int {
+keyboard_add_listener :: proc(keyboard: ^Keyboard, implementation: ^Keyboard_Listener, data: rawptr) -> i32 {
     return proxy_add_listener(
         cast(^Proxy)keyboard,
         implementation,
@@ -3549,8 +3598,8 @@ keyboard_release :: proc(
         nil,
         proxy_get_version(cast(^Proxy)keyboard),
         {},
-        nil,
     )
+    return
 }
 
 
@@ -3714,7 +3763,7 @@ Touch_Listener :: struct {
 }
 
 
-touch_add_listener :: proc(touch: ^Touch, implementation: ^Touch_Listener, data: rawptr) -> int {
+touch_add_listener :: proc(touch: ^Touch, implementation: ^Touch_Listener, data: rawptr) -> i32 {
     return proxy_add_listener(
         cast(^Proxy)touch,
         implementation,
@@ -3733,8 +3782,8 @@ touch_release :: proc(
         nil,
         proxy_get_version(cast(^Proxy)touch),
         {},
-        nil,
     )
+    return
 }
 
 
@@ -3989,7 +4038,7 @@ Output_Listener :: struct {
 }
 
 
-output_add_listener :: proc(output: ^Output, implementation: ^Output_Listener, data: rawptr) -> int {
+output_add_listener :: proc(output: ^Output, implementation: ^Output_Listener, data: rawptr) -> i32 {
     return proxy_add_listener(
         cast(^Proxy)output,
         implementation,
@@ -4009,8 +4058,8 @@ output_release :: proc(
         nil,
         proxy_get_version(cast(^Proxy)output),
         {},
-        nil,
     )
+    return
 }
 
 
@@ -4027,7 +4076,7 @@ Region_Listener :: struct {
 }
 
 
-region_add_listener :: proc(region: ^Region, implementation: ^Region_Listener, data: rawptr) -> int {
+region_add_listener :: proc(region: ^Region, implementation: ^Region_Listener, data: rawptr) -> i32 {
     return proxy_add_listener(
         cast(^Proxy)region,
         implementation,
@@ -4046,8 +4095,8 @@ region_destroy :: proc(
         nil,
         proxy_get_version(cast(^Proxy)region),
         {},
-        nil,
     )
+    return
 }
 
 // add rectangle to region 
@@ -4074,6 +4123,7 @@ region_add :: proc(
         width,
         height,
     )
+    return
 }
 
 // subtract rectangle from region 
@@ -4100,6 +4150,7 @@ region_subtract :: proc(
         width,
         height,
     )
+    return
 }
 
 
@@ -4140,7 +4191,7 @@ Subcompositor_Listener :: struct {
 }
 
 
-subcompositor_add_listener :: proc(subcompositor: ^Subcompositor, implementation: ^Subcompositor_Listener, data: rawptr) -> int {
+subcompositor_add_listener :: proc(subcompositor: ^Subcompositor, implementation: ^Subcompositor_Listener, data: rawptr) -> i32 {
     return proxy_add_listener(
         cast(^Proxy)subcompositor,
         implementation,
@@ -4161,8 +4212,8 @@ subcompositor_destroy :: proc(
         nil,
         proxy_get_version(cast(^Proxy)subcompositor),
         {},
-        nil,
     )
+    return
 }
 
 // give a surface the role sub-surface 
@@ -4191,16 +4242,18 @@ subcompositor_get_subsurface :: proc(
     surface: Object,
     // the parent surface 
     parent: Object,
-) -> (id: /* the new sub-surface object ID */ Interface) {
-    id = proxy_marshal_flags(
+) -> (id: /* the new sub-surface object ID */ ^Subsurface) {
+    id = cast(^Subsurface)proxy_marshal_flags(
         cast(^Proxy)subcompositor,
         1,
         &subsurface_interface,
         proxy_get_version(cast(^Proxy)subcompositor),
         {},
+        nil,
         surface,
         parent,
     )
+    return
 }
 
 
@@ -4272,7 +4325,7 @@ Subsurface_Listener :: struct {
 }
 
 
-subsurface_add_listener :: proc(subsurface: ^Subsurface, implementation: ^Subsurface_Listener, data: rawptr) -> int {
+subsurface_add_listener :: proc(subsurface: ^Subsurface, implementation: ^Subsurface_Listener, data: rawptr) -> i32 {
     return proxy_add_listener(
         cast(^Proxy)subsurface,
         implementation,
@@ -4294,8 +4347,8 @@ subsurface_destroy :: proc(
         nil,
         proxy_get_version(cast(^Proxy)subsurface),
         {},
-        nil,
     )
+    return
 }
 
 // reposition the sub-surface 
@@ -4329,6 +4382,7 @@ subsurface_set_position :: proc(
         x,
         y,
     )
+    return
 }
 
 // restack the sub-surface 
@@ -4358,6 +4412,7 @@ subsurface_place_above :: proc(
         {},
         sibling,
     )
+    return
 }
 
 // restack the sub-surface 
@@ -4376,6 +4431,7 @@ subsurface_place_below :: proc(
         {},
         sibling,
     )
+    return
 }
 
 // set sub-surface to synchronized mode 
@@ -4401,8 +4457,8 @@ subsurface_set_sync :: proc(
         nil,
         proxy_get_version(cast(^Proxy)subsurface),
         {},
-        nil,
     )
+    return
 }
 
 // set sub-surface to desynchronized mode 
@@ -4434,8 +4490,8 @@ subsurface_set_desync :: proc(
         nil,
         proxy_get_version(cast(^Proxy)subsurface),
         {},
-        nil,
     )
+    return
 }
 
 
@@ -4450,7 +4506,7 @@ Fixes_Listener :: struct {
 }
 
 
-fixes_add_listener :: proc(fixes: ^Fixes, implementation: ^Fixes_Listener, data: rawptr) -> int {
+fixes_add_listener :: proc(fixes: ^Fixes, implementation: ^Fixes_Listener, data: rawptr) -> i32 {
     return proxy_add_listener(
         cast(^Proxy)fixes,
         implementation,
@@ -4469,8 +4525,8 @@ fixes_destroy :: proc(
         nil,
         proxy_get_version(cast(^Proxy)fixes),
         {},
-        nil,
     )
+    return
 }
 
 // destroy a wl_registry 
@@ -4496,6 +4552,7 @@ fixes_destroy_registry :: proc(
         {},
         registry,
     )
+    return
 }
 
 
