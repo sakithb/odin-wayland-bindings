@@ -98,8 +98,8 @@ parse_arg :: proc(elem: xml.Element) -> (arg: Arg, err: mem.Allocator_Error) {
                 arg.type = attr.val
             }
         case "interface":
-            arg.interface = attr.val[3:]
-            arg.interface_type = strings.to_ada_case(attr.val[3:]) or_return
+            arg.interface = strings.trim_prefix(attr.val, "wl_")
+            arg.interface_type = strings.to_ada_case(arg.interface) or_return
         case "summary":
             arg.summary = attr.val
         }
@@ -213,7 +213,7 @@ parse_interface :: proc(elems: []xml.Element, elem: xml.Element) -> (iface: Inte
     for attr in elem.attribs {
         switch attr.key {
         case "name":
-            iface.name = attr.val[3:]
+            iface.name = strings.trim_prefix(attr.val, "wl_")
             iface.type_name = strings.to_ada_case(iface.name) or_return
         case "version":
             iface.version = attr.val
@@ -439,8 +439,8 @@ gen_interface :: proc(iface: Interface) -> (s: string, err: mem.Allocator_Error)
     return
 }
 
-main :: proc() {
-    doc, doc_err := xml.load_from_file("wayland.xml")
+gen :: proc(xml_path: string) {
+    doc, doc_err := xml.load_from_file(xml_path)
     if doc_err != nil {
         fmt.eprintf("Error while parsing wayland.xml: %v\n", doc_err)
         return
@@ -492,9 +492,41 @@ main :: proc() {
     fmt.sbprint(&interface_links, "}\n")
     fmt.sbprint(&b, strings.to_string(interface_links))
 
-    ok := os.write_entire_file("bindings/protocol.odin", transmute([]u8)strings.to_string(b))
+    name: string
+    for attr in doc.elements[0].attribs {
+        if attr.key == "name" {
+            name = attr.val
+            break
+        }
+    }
+
+    path, path_err := strings.concatenate({"bindings/", name, ".odin"})
+    if path_err != nil {
+        fmt.eprintf("Could not built path: %#v\n", path_err)
+        return
+    }
+
+    ok := os.write_entire_file(path, transmute([]u8)strings.to_string(b))
     if !ok {
         fmt.eprintf("Error while writing file\n")
         return
+    }
+}
+
+main :: proc() {
+    fd, fd_err := os.open("defs/")
+    if fd_err != nil {
+        fmt.eprintf("Error while reading defs dir: %v\n", fd_err)
+        return
+    }
+
+    fis, fis_err := os.read_dir(fd, -1)
+    if fis_err != nil {
+        fmt.eprintf("Error while reading defs dir: %v\n", fis_err)
+        return
+    }
+
+    for fi in fis {
+        gen(fi.fullpath)
     }
 }
