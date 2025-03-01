@@ -288,7 +288,7 @@ gen_event :: proc(ev: Event, iface_name: string, iface_type: string) -> (s: stri
     fmt.sbprintf(&b, "    %s: proc(\n", ev.name)
 
     fmt.sbprint(&b, "        data: rawptr,\n")
-    fmt.sbprintf(&b, "        %s: %s,\n", iface_name, iface_type)
+    fmt.sbprintf(&b, "        %s: ^%s,\n", iface_name, iface_type)
 
     for arg in ev.args {
         fmt.sbprintf(&b, "        // %s \n", arg.summary)
@@ -330,7 +330,12 @@ gen_request :: proc(req: Request, index: int, iface_name: string, iface_type_nam
             }
         } else {
             fmt.sbprintf(&b, "    // %s \n", arg.summary)
-            fmt.sbprintf(&b, "    %s: %s,\n", arg.name, arg.type)
+
+            if arg.type == "Object" && !r_empty_iface {
+                fmt.sbprintf(&b, "    %s: ^%s,\n", arg.name, arg.interface_type)
+            } else {
+                fmt.sbprintf(&b, "    %s: %s,\n", arg.name, arg.type)
+            }
         }
     }
 
@@ -404,9 +409,6 @@ PROXY_ADD_LISTENER_FMT :: `
 gen_interface :: proc(iface: Interface) -> (s: string, err: mem.Allocator_Error) {
     b := strings.builder_make() or_return
 
-    fmt.sbprint(&b, gen_description(iface.description) or_return)
-
-    fmt.sbprintf(&b, "%s_interface: Interface\n\n", iface.name)
     if (iface.name != "display") {
         fmt.sbprintf(&b, "%s :: struct{{}} \n\n", iface.type_name)
     }
@@ -452,6 +454,10 @@ main :: proc() {
 
     fmt.sbprint(&b, "package wayland_client\n\n")
 
+    interface_links := strings.builder_make()
+    fmt.sbprint(&interface_links, "@(default_calling_convention=\"c\", link_prefix=\"wl_\")\n")
+    fmt.sbprint(&interface_links, "foreign wl {\n")
+
     for interface in doc.elements[0].value[1:] {
         iface, iface_err := parse_interface(
             doc.elements[:],
@@ -462,6 +468,15 @@ main :: proc() {
             return
         }
 
+        iface_desc, iface_desc_err := gen_description(iface.description, 1)
+        if iface_desc_err != nil {
+            fmt.eprintf("Could not parse interface desc: %#v\n", iface_desc_err)
+            return
+        }
+
+        fmt.sbprint(&interface_links, iface_desc)
+        fmt.sbprintf(&interface_links, "    %s_interface: Interface\n\n", iface.name)
+
         gened_iface, gened_iface_err := gen_interface(iface)
         if gened_iface_err != nil {
             fmt.eprintf("Could not gen interface: %#v\n", gened_iface_err)
@@ -471,6 +486,10 @@ main :: proc() {
         fmt.sbprint(&b, gened_iface)
         fmt.sbprint(&b, "\n")
     }
+
+    fmt.sbprint(&interface_links, "}\n")
+
+    fmt.print(strings.to_string(interface_links))
 
     ok := os.write_entire_file("bindings/protocol.odin", transmute([]u8)strings.to_string(b))
     if !ok {

@@ -1,10 +1,5 @@
 package wayland_client
 
-// core global object 
-// The core global object.  This is a special singleton object.  It 
-// is used for internal Wayland protocol features. 
-display_interface: Interface
-
 // global error values 
 // These errors are global and can be emitted in response to any 
 // server request. 
@@ -30,7 +25,7 @@ Display_Listener :: struct {
     // of the error, for (debugging) convenience. 
     error: proc(
         data: rawptr,
-        display: Display,
+        display: ^Display,
         // object where the error occurred 
         object_id: Object,
         // error code 
@@ -46,7 +41,7 @@ Display_Listener :: struct {
     // it will know that it can safely reuse the object ID. 
     delete_id: proc(
         data: rawptr,
-        display: Display,
+        display: ^Display,
         // deleted object ID 
         id: uint,
     ),
@@ -112,29 +107,6 @@ display_get_registry :: proc(
 }
 
 
-// global registry object 
-// The singleton global registry object.  The server has a number of 
-// global objects that are available to all clients.  These objects 
-// typically represent an actual object in the server (for example, 
-// an input device) or they are singleton objects that provide 
-// extension functionality. 
-//  
-// When a client creates a registry object, the registry object 
-// will emit a global event for each global currently in the 
-// registry.  Globals come and go as a result of device or 
-// monitor hotplugs, reconfiguration or other events, and the 
-// registry will send out global and global_remove events to 
-// keep the client up to date with the changes.  To mark the end 
-// of the initial burst of events, the client can use the 
-// wl_display.sync request immediately after calling 
-// wl_display.get_registry. 
-//  
-// A client can bind to a global object by using the bind 
-// request.  This creates a client-side handle that lets the object 
-// emit events to the client and lets the client invoke requests on 
-// the object. 
-registry_interface: Interface
-
 Registry :: struct{} 
 
 Registry_Listener :: struct {
@@ -146,7 +118,7 @@ Registry_Listener :: struct {
     // given version of the given interface. 
     global: proc(
         data: rawptr,
-        registry: Registry,
+        registry: ^Registry,
         // numeric name of the global object 
         name: uint,
         // interface implemented by the object 
@@ -167,7 +139,7 @@ Registry_Listener :: struct {
     // the global going away and a client sending a request to it. 
     global_remove: proc(
         data: rawptr,
-        registry: Registry,
+        registry: ^Registry,
         // numeric name of the global object 
         name: uint,
     ),
@@ -207,14 +179,6 @@ registry_bind :: proc(
 }
 
 
-// callback object 
-// Clients can handle the 'done' event to get notified when 
-// the related request is done. 
-//  
-// Note, because wl_callback objects are created from multiple independent 
-// factory interfaces, the wl_callback interface is frozen at version 1. 
-callback_interface: Interface
-
 Callback :: struct{} 
 
 Callback_Listener :: struct {
@@ -222,7 +186,7 @@ Callback_Listener :: struct {
     // Notify the client when the related request is done. 
     done: proc(
         data: rawptr,
-        callback: Callback,
+        callback: ^Callback,
         // request-specific data for the callback 
         callback_data: uint,
     ),
@@ -237,12 +201,6 @@ callback_add_listener :: proc(callback: ^Callback, implementation: ^Callback_Lis
     )
 }
 
-
-// the compositor singleton 
-// A compositor.  This object is a singleton global.  The 
-// compositor is in charge of combining the contents of multiple 
-// surfaces into one displayable output. 
-compositor_interface: Interface
 
 Compositor :: struct{} 
 
@@ -290,16 +248,6 @@ compositor_create_region :: proc(
     return
 }
 
-
-// a shared memory pool 
-// The wl_shm_pool object encapsulates a piece of memory shared 
-// between the compositor and client.  Through the wl_shm_pool 
-// object, the client can allocate shared memory wl_buffer objects. 
-// All objects created through the same pool share the same 
-// underlying mapped memory. Reusing the mapped memory avoids the 
-// setup/teardown overhead and is useful when interactively resizing 
-// a surface or for many small buffers. 
-shm_pool_interface: Interface
 
 Shm_Pool :: struct{} 
 
@@ -402,18 +350,6 @@ shm_pool_resize :: proc(
     return
 }
 
-
-// shared memory support 
-// A singleton global object that provides support for shared 
-// memory. 
-//  
-// Clients can create wl_shm_pool objects using the create_pool 
-// request. 
-//  
-// On binding the wl_shm object one or more format events 
-// are emitted to inform clients about the valid pixel formats 
-// that can be used for buffers. 
-shm_interface: Interface
 
 Shm :: struct{} 
 
@@ -697,7 +633,7 @@ Shm_Listener :: struct {
     // argb8888 and xrgb8888. 
     format: proc(
         data: rawptr,
-        shm: Shm,
+        shm: ^Shm,
         // buffer pixel format 
         format: uint,
     ),
@@ -757,24 +693,6 @@ shm_release :: proc(
 }
 
 
-// content for a wl_surface 
-// A buffer provides the content for a wl_surface. Buffers are 
-// created through factory interfaces such as wl_shm, wp_linux_buffer_params 
-// (from the linux-dmabuf protocol extension) or similar. It has a width and 
-// a height and can be attached to a wl_surface, but the mechanism by which a 
-// client provides and updates the contents is defined by the buffer factory 
-// interface. 
-//  
-// Color channels are assumed to be electrical rather than optical (in other 
-// words, encoded with a transfer function) unless otherwise specified. If 
-// the buffer uses a format that has an alpha channel, the alpha channel is 
-// assumed to be premultiplied into the electrical color channel values 
-// (after transfer function encoding) unless otherwise specified. 
-//  
-// Note, because wl_buffer objects are created from multiple independent 
-// factory interfaces, the wl_buffer interface is frozen at version 1. 
-buffer_interface: Interface
-
 Buffer :: struct{} 
 
 Buffer_Listener :: struct {
@@ -793,7 +711,7 @@ Buffer_Listener :: struct {
     // optimization for GL(ES) compositors with wl_shm clients. 
     release: proc(
         data: rawptr,
-        buffer: Buffer,
+        buffer: ^Buffer,
     ),
 }
 
@@ -825,15 +743,6 @@ buffer_destroy :: proc(
 }
 
 
-// offer to transfer data 
-// A wl_data_offer represents a piece of data offered for transfer 
-// by another client (the source client).  It is used by the 
-// copy-and-paste and drag-and-drop mechanisms.  The offer 
-// describes the different mime types that the data can be 
-// converted to and provides the mechanism for transferring the 
-// data directly from the source client. 
-data_offer_interface: Interface
-
 Data_Offer :: struct{} 
 
 //  
@@ -855,7 +764,7 @@ Data_Offer_Listener :: struct {
     // event per offered mime type. 
     offer: proc(
         data: rawptr,
-        data_offer: Data_Offer,
+        data_offer: ^Data_Offer,
         // offered mime type 
         mime_type: cstring,
     ),
@@ -866,7 +775,7 @@ Data_Offer_Listener :: struct {
     // wl_data_source.set_actions. 
     source_actions: proc(
         data: rawptr,
-        data_offer: Data_Offer,
+        data_offer: ^Data_Offer,
         // actions offered by the data source 
         source_actions: uint,
     ),
@@ -908,7 +817,7 @@ Data_Offer_Listener :: struct {
     // must happen before the call to wl_data_offer.finish. 
     action: proc(
         data: rawptr,
-        data_offer: Data_Offer,
+        data_offer: ^Data_Offer,
         // action selected by the compositor 
         dnd_action: uint,
     ),
@@ -1087,13 +996,6 @@ data_offer_set_actions :: proc(
 }
 
 
-// offer to transfer data 
-// The wl_data_source object is the source side of a wl_data_offer. 
-// It is created by the source client in a data transfer and 
-// provides a way to describe the offered data and a way to respond 
-// to requests to transfer the data. 
-data_source_interface: Interface
-
 Data_Source :: struct{} 
 
 //  
@@ -1113,7 +1015,7 @@ Data_Source_Listener :: struct {
     // Used for feedback during drag-and-drop. 
     target: proc(
         data: rawptr,
-        data_source: Data_Source,
+        data_source: ^Data_Source,
         // mime type accepted by the target 
         mime_type: cstring,
     ),
@@ -1123,7 +1025,7 @@ Data_Source_Listener :: struct {
     // close it. 
     send: proc(
         data: rawptr,
-        data_source: Data_Source,
+        data_source: ^Data_Source,
         // mime type for the data 
         mime_type: cstring,
         // file descriptor for the data 
@@ -1152,7 +1054,7 @@ Data_Source_Listener :: struct {
     // source. 
     cancelled: proc(
         data: rawptr,
-        data_source: Data_Source,
+        data_source: ^Data_Source,
     ),
     // the drag-and-drop operation physically finished 
     // The user performed the drop action. This event does not indicate 
@@ -1166,7 +1068,7 @@ Data_Source_Listener :: struct {
     // not be destroyed here. 
     dnd_drop_performed: proc(
         data: rawptr,
-        data_source: Data_Source,
+        data_source: ^Data_Source,
     ),
     // the drag-and-drop operation concluded 
     // The drop destination finished interoperating with this data 
@@ -1177,7 +1079,7 @@ Data_Source_Listener :: struct {
     // source can now delete the transferred data. 
     dnd_finished: proc(
         data: rawptr,
-        data_source: Data_Source,
+        data_source: ^Data_Source,
     ),
     // notify the selected action 
     // This event indicates the action selected by the compositor after 
@@ -1207,7 +1109,7 @@ Data_Source_Listener :: struct {
     // they reflect the current action. 
     action: proc(
         data: rawptr,
-        data_source: Data_Source,
+        data_source: ^Data_Source,
         // action selected by the compositor 
         dnd_action: uint,
     ),
@@ -1288,14 +1190,6 @@ data_source_set_actions :: proc(
 }
 
 
-// data transfer device 
-// There is one wl_data_device per seat which can be obtained 
-// from the global wl_data_device_manager singleton. 
-//  
-// A wl_data_device provides access to inter-client data transfer 
-// mechanisms such as copy-and-paste and drag-and-drop. 
-data_device_interface: Interface
-
 Data_Device :: struct{} 
 
 //  
@@ -1318,7 +1212,7 @@ Data_Device_Listener :: struct {
     // mime types it offers. 
     data_offer: proc(
         data: rawptr,
-        data_device: Data_Device,
+        data_device: ^Data_Device,
         // the new data_offer object 
         id: Interface,
     ),
@@ -1329,7 +1223,7 @@ Data_Device_Listener :: struct {
     // coordinates. 
     enter: proc(
         data: rawptr,
-        data_device: Data_Device,
+        data_device: ^Data_Device,
         // serial number of the enter event 
         serial: uint,
         // client surface entered 
@@ -1347,7 +1241,7 @@ Data_Device_Listener :: struct {
     // wl_data_offer introduced at enter time at this point. 
     leave: proc(
         data: rawptr,
-        data_device: Data_Device,
+        data_device: ^Data_Device,
     ),
     // drag-and-drop session motion 
     // This event is sent when the drag-and-drop pointer moves within 
@@ -1356,7 +1250,7 @@ Data_Device_Listener :: struct {
     // coordinates. 
     motion: proc(
         data: rawptr,
-        data_device: Data_Device,
+        data_device: ^Data_Device,
         // timestamp with millisecond granularity 
         time: uint,
         // surface-local x coordinate 
@@ -1380,7 +1274,7 @@ Data_Device_Listener :: struct {
     // to cancel the operation. 
     drop: proc(
         data: rawptr,
-        data_device: Data_Device,
+        data_device: ^Data_Device,
     ),
     // advertise new selection 
     // The selection event is sent out to notify the client of a new 
@@ -1397,7 +1291,7 @@ Data_Device_Listener :: struct {
     // data_offer, if any, upon receiving this event. 
     selection: proc(
         data: rawptr,
-        data_device: Data_Device,
+        data_device: ^Data_Device,
         // selection data_offer object 
         id: Object,
     ),
@@ -1445,11 +1339,11 @@ data_device_add_listener :: proc(data_device: ^Data_Device, implementation: ^Dat
 data_device_start_drag :: proc(
     data_device: ^Data_Device,
     // data source for the eventual transfer 
-    source: Object,
+    source: ^Data_Source,
     // surface where the drag originates 
-    origin: Object,
+    origin: ^Surface,
     // drag-and-drop icon surface 
-    icon: Object,
+    icon: ^Surface,
     // serial number of the implicit grab on the origin 
     serial: uint,
 ){
@@ -1479,7 +1373,7 @@ data_device_start_drag :: proc(
 data_device_set_selection :: proc(
     data_device: ^Data_Device,
     // data source for the selection 
-    source: Object,
+    source: ^Data_Source,
     // serial number of the event that triggered this request 
     serial: uint,
 ){
@@ -1510,19 +1404,6 @@ data_device_release :: proc(
     return
 }
 
-
-// data transfer interface 
-// The wl_data_device_manager is a singleton global object that 
-// provides access to inter-client data transfer mechanisms such as 
-// copy-and-paste and drag-and-drop.  These mechanisms are tied to 
-// a wl_seat and this interface lets a client get a wl_data_device 
-// corresponding to a wl_seat. 
-//  
-// Depending on the version bound, the objects created from the bound 
-// wl_data_device_manager object will have different requirements for 
-// functioning properly. See wl_data_source.set_actions, 
-// wl_data_offer.accept and wl_data_offer.finish for details. 
-data_device_manager_interface: Interface
 
 Data_Device_Manager :: struct{} 
 
@@ -1594,7 +1475,7 @@ data_device_manager_create_data_source :: proc(
 data_device_manager_get_data_device :: proc(
     data_device_manager: ^Data_Device_Manager,
     // seat associated with the data device 
-    seat: Object,
+    seat: ^Seat,
 ) -> (id: /* data device to create */ ^Data_Device) {
     id = cast(^Data_Device)proxy_marshal_flags(
         cast(^Proxy)data_device_manager,
@@ -1608,18 +1489,6 @@ data_device_manager_get_data_device :: proc(
     return
 }
 
-
-// create desktop-style surfaces 
-// This interface is implemented by servers that provide 
-// desktop-style user interfaces. 
-//  
-// It allows clients to associate a wl_shell_surface with 
-// a basic surface. 
-//  
-// Note! This protocol is deprecated and not intended for production use. 
-// For desktop-style user interfaces, use xdg_shell. Compositors and clients 
-// should not implement this interface. 
-shell_interface: Interface
 
 Shell :: struct{} 
 
@@ -1651,7 +1520,7 @@ shell_add_listener :: proc(shell: ^Shell, implementation: ^Shell_Listener, data:
 shell_get_shell_surface :: proc(
     shell: ^Shell,
     // surface to be given the shell surface role 
-    surface: Object,
+    surface: ^Surface,
 ) -> (id: /* shell surface to create */ ^Shell_Surface) {
     id = cast(^Shell_Surface)proxy_marshal_flags(
         cast(^Proxy)shell,
@@ -1665,20 +1534,6 @@ shell_get_shell_surface :: proc(
     return
 }
 
-
-// desktop-style metadata interface 
-// An interface that may be implemented by a wl_surface, for 
-// implementations that provide a desktop-style user interface. 
-//  
-// It provides requests to treat surfaces like toplevel, fullscreen 
-// or popup windows, move, resize or maximize them, associate 
-// metadata like title and class, etc. 
-//  
-// On the server side the object is automatically destroyed when 
-// the related wl_surface is destroyed. On the client side, 
-// wl_shell_surface_destroy() must be called before destroying 
-// the wl_surface object. 
-shell_surface_interface: Interface
 
 Shell_Surface :: struct{} 
 
@@ -1737,7 +1592,7 @@ Shell_Surface_Listener :: struct {
     // requests. A client is expected to reply with a pong request. 
     ping: proc(
         data: rawptr,
-        shell_surface: Shell_Surface,
+        shell_surface: ^Shell_Surface,
         // serial number of the ping 
         serial: uint,
     ),
@@ -1761,7 +1616,7 @@ Shell_Surface_Listener :: struct {
     // in surface-local coordinates. 
     configure: proc(
         data: rawptr,
-        shell_surface: Shell_Surface,
+        shell_surface: ^Shell_Surface,
         // how the surface was resized 
         edges: uint,
         // new width of the surface 
@@ -1775,7 +1630,7 @@ Shell_Surface_Listener :: struct {
     // to the client owning the popup surface. 
     popup_done: proc(
         data: rawptr,
-        shell_surface: Shell_Surface,
+        shell_surface: ^Shell_Surface,
     ),
 }
 
@@ -1816,7 +1671,7 @@ shell_surface_pong :: proc(
 shell_surface_move :: proc(
     shell_surface: ^Shell_Surface,
     // seat whose pointer is used 
-    seat: Object,
+    seat: ^Seat,
     // serial number of the implicit grab on the pointer 
     serial: uint,
 ){
@@ -1841,7 +1696,7 @@ shell_surface_move :: proc(
 shell_surface_resize :: proc(
     shell_surface: ^Shell_Surface,
     // seat whose pointer is used 
-    seat: Object,
+    seat: ^Seat,
     // serial number of the implicit grab on the pointer 
     serial: uint,
     // which edge or corner is being dragged 
@@ -1888,7 +1743,7 @@ shell_surface_set_toplevel :: proc(
 shell_surface_set_transient :: proc(
     shell_surface: ^Shell_Surface,
     // parent surface 
-    parent: Object,
+    parent: ^Surface,
     // surface-local x coordinate 
     x: int,
     // surface-local y coordinate 
@@ -1951,7 +1806,7 @@ shell_surface_set_fullscreen :: proc(
     // framerate in mHz 
     framerate: uint,
     // output on which the surface is to be fullscreen 
-    output: Object,
+    output: ^Output,
 ){
     proxy_marshal_flags(
         cast(^Proxy)shell_surface,
@@ -1989,11 +1844,11 @@ shell_surface_set_fullscreen :: proc(
 shell_surface_set_popup :: proc(
     shell_surface: ^Shell_Surface,
     // seat whose pointer is used 
-    seat: Object,
+    seat: ^Seat,
     // serial number of the implicit grab on the pointer 
     serial: uint,
     // parent surface 
-    parent: Object,
+    parent: ^Surface,
     // surface-local x coordinate 
     x: int,
     // surface-local y coordinate 
@@ -2039,7 +1894,7 @@ shell_surface_set_popup :: proc(
 shell_surface_set_maximized :: proc(
     shell_surface: ^Shell_Surface,
     // output on which the surface is to be maximized 
-    output: Object,
+    output: ^Output,
 ){
     proxy_marshal_flags(
         cast(^Proxy)shell_surface,
@@ -2100,51 +1955,6 @@ shell_surface_set_class :: proc(
 }
 
 
-// an onscreen surface 
-// A surface is a rectangular area that may be displayed on zero 
-// or more outputs, and shown any number of times at the compositor's 
-// discretion. They can present wl_buffers, receive user input, and 
-// define a local coordinate system. 
-//  
-// The size of a surface (and relative positions on it) is described 
-// in surface-local coordinates, which may differ from the buffer 
-// coordinates of the pixel content, in case a buffer_transform 
-// or a buffer_scale is used. 
-//  
-// A surface without a "role" is fairly useless: a compositor does 
-// not know where, when or how to present it. The role is the 
-// purpose of a wl_surface. Examples of roles are a cursor for a 
-// pointer (as set by wl_pointer.set_cursor), a drag icon 
-// (wl_data_device.start_drag), a sub-surface 
-// (wl_subcompositor.get_subsurface), and a window as defined by a 
-// shell protocol (e.g. wl_shell.get_shell_surface). 
-//  
-// A surface can have only one role at a time. Initially a 
-// wl_surface does not have a role. Once a wl_surface is given a 
-// role, it is set permanently for the whole lifetime of the 
-// wl_surface object. Giving the current role again is allowed, 
-// unless explicitly forbidden by the relevant interface 
-// specification. 
-//  
-// Surface roles are given by requests in other interfaces such as 
-// wl_pointer.set_cursor. The request should explicitly mention 
-// that this request gives a role to a wl_surface. Often, this 
-// request also creates a new protocol object that represents the 
-// role and adds additional functionality to wl_surface. When a 
-// client wants to destroy a wl_surface, they must destroy this role 
-// object before the wl_surface, otherwise a defunct_role_object error is 
-// sent. 
-//  
-// Destroying the role object does not remove the role from the 
-// wl_surface, but it may stop the wl_surface from "playing the role". 
-// For instance, if a wl_subsurface object is destroyed, the wl_surface 
-// it was created for will be unmapped and forget its position and 
-// z-order. It is allowed to create a wl_subsurface for the same 
-// wl_surface again, but it is not allowed to use the wl_surface as 
-// a cursor (cursor is a different role than sub-surface, and role 
-// switching is not allowed). 
-surface_interface: Interface
-
 Surface :: struct{} 
 
 // wl_surface error values 
@@ -2171,7 +1981,7 @@ Surface_Listener :: struct {
     // Note that a surface may be overlapping with zero or more outputs. 
     enter: proc(
         data: rawptr,
-        surface: Surface,
+        surface: ^Surface,
         // output entered by the surface 
         output: Object,
     ),
@@ -2187,7 +1997,7 @@ Surface_Listener :: struct {
     // used instead. 
     leave: proc(
         data: rawptr,
-        surface: Surface,
+        surface: ^Surface,
         // output left by the surface 
         output: Object,
     ),
@@ -2206,7 +2016,7 @@ Surface_Listener :: struct {
     // The compositor shall emit a scale value greater than 0. 
     preferred_buffer_scale: proc(
         data: rawptr,
-        surface: Surface,
+        surface: ^Surface,
         // preferred scaling factor 
         factor: int,
     ),
@@ -2222,7 +2032,7 @@ Surface_Listener :: struct {
     // surface buffer more efficiently. 
     preferred_buffer_transform: proc(
         data: rawptr,
-        surface: Surface,
+        surface: ^Surface,
         // preferred transform 
         transform: uint,
     ),
@@ -2320,7 +2130,7 @@ surface_destroy :: proc(
 surface_attach :: proc(
     surface: ^Surface,
     // buffer of surface contents 
-    buffer: Object,
+    buffer: ^Buffer,
     // surface-local x coordinate 
     x: int,
     // surface-local y coordinate 
@@ -2461,7 +2271,7 @@ surface_frame :: proc(
 surface_set_opaque_region :: proc(
     surface: ^Surface,
     // opaque region of the surface 
-    region: Object,
+    region: ^Region,
 ){
     proxy_marshal_flags(
         cast(^Proxy)surface,
@@ -2500,7 +2310,7 @@ surface_set_opaque_region :: proc(
 surface_set_input_region :: proc(
     surface: ^Surface,
     // input region of the surface 
-    region: Object,
+    region: ^Region,
 ){
     proxy_marshal_flags(
         cast(^Proxy)surface,
@@ -2728,13 +2538,6 @@ surface_offset :: proc(
 }
 
 
-// group of input devices 
-// A seat is a group of keyboards, pointer and touch devices. This 
-// object is published as a global during start up, or when such a 
-// device is hot plugged.  A seat typically has a pointer and 
-// maintains a keyboard focus and a pointer focus. 
-seat_interface: Interface
-
 Seat :: struct{} 
 
 // seat capability bitmask 
@@ -2784,7 +2587,7 @@ Seat_Listener :: struct {
     // keyboard and touch capabilities, respectively. 
     capabilities: proc(
         data: rawptr,
-        seat: Seat,
+        seat: ^Seat,
         // capabilities of the seat 
         capabilities: uint,
     ),
@@ -2807,7 +2610,7 @@ Seat_Listener :: struct {
     // destroyed and re-created later. 
     name: proc(
         data: rawptr,
-        seat: Seat,
+        seat: ^Seat,
         // seat identifier 
         name: cstring,
     ),
@@ -2908,17 +2711,6 @@ seat_release :: proc(
 }
 
 
-// pointer input device 
-// The wl_pointer interface represents one or more input devices, 
-// such as mice, which control the pointer location and pointer_focus 
-// of a seat. 
-//  
-// The wl_pointer interface generates motion, enter and leave 
-// events for the surfaces that the pointer is located over, 
-// and button and axis events for button presses, button releases 
-// and scrolling. 
-pointer_interface: Interface
-
 Pointer :: struct{} 
 
 //  
@@ -2995,7 +2787,7 @@ Pointer_Listener :: struct {
     // an appropriate pointer image with the set_cursor request. 
     enter: proc(
         data: rawptr,
-        pointer: Pointer,
+        pointer: ^Pointer,
         // serial number of the enter event 
         serial: uint,
         // surface entered by the pointer 
@@ -3013,7 +2805,7 @@ Pointer_Listener :: struct {
     // for the new focus. 
     leave: proc(
         data: rawptr,
-        pointer: Pointer,
+        pointer: ^Pointer,
         // serial number of the leave event 
         serial: uint,
         // surface left by the pointer 
@@ -3025,7 +2817,7 @@ Pointer_Listener :: struct {
     // focused surface. 
     motion: proc(
         data: rawptr,
-        pointer: Pointer,
+        pointer: ^Pointer,
         // timestamp with millisecond granularity 
         time: uint,
         // surface-local x coordinate 
@@ -3050,7 +2842,7 @@ Pointer_Listener :: struct {
     // protocol. 
     button: proc(
         data: rawptr,
-        pointer: Pointer,
+        pointer: ^Pointer,
         // serial number of the button event 
         serial: uint,
         // timestamp with millisecond granularity 
@@ -3079,7 +2871,7 @@ Pointer_Listener :: struct {
     // scroll distance. 
     axis: proc(
         data: rawptr,
-        pointer: Pointer,
+        pointer: ^Pointer,
         // timestamp with millisecond granularity 
         time: uint,
         // axis type 
@@ -3124,7 +2916,7 @@ Pointer_Listener :: struct {
     // groups. 
     frame: proc(
         data: rawptr,
-        pointer: Pointer,
+        pointer: ^Pointer,
     ),
     // axis source event 
     // Source information for scroll and other axes. 
@@ -3154,7 +2946,7 @@ Pointer_Listener :: struct {
     // not guaranteed. 
     axis_source: proc(
         data: rawptr,
-        pointer: Pointer,
+        pointer: ^Pointer,
         // source of the axis event 
         axis_source: uint,
     ),
@@ -3175,7 +2967,7 @@ Pointer_Listener :: struct {
     // preceding wl_pointer.axis event. 
     axis_stop: proc(
         data: rawptr,
-        pointer: Pointer,
+        pointer: ^Pointer,
         // timestamp with millisecond granularity 
         time: uint,
         // the axis stopped with this event 
@@ -3214,7 +3006,7 @@ Pointer_Listener :: struct {
     // not guaranteed. 
     axis_discrete: proc(
         data: rawptr,
-        pointer: Pointer,
+        pointer: ^Pointer,
         // axis type 
         axis: uint,
         // number of steps 
@@ -3244,7 +3036,7 @@ Pointer_Listener :: struct {
     // not guaranteed. 
     axis_value120: proc(
         data: rawptr,
-        pointer: Pointer,
+        pointer: ^Pointer,
         // axis type 
         axis: uint,
         // scroll distance as fraction of 120 
@@ -3288,7 +3080,7 @@ Pointer_Listener :: struct {
     // guaranteed. 
     axis_relative_direction: proc(
         data: rawptr,
-        pointer: Pointer,
+        pointer: ^Pointer,
         // axis type 
         axis: uint,
         // physical direction relative to axis motion 
@@ -3344,7 +3136,7 @@ pointer_set_cursor :: proc(
     // serial number of the enter event 
     serial: uint,
     // pointer surface 
-    surface: Object,
+    surface: ^Surface,
     // surface-local x coordinate 
     hotspot_x: int,
     // surface-local y coordinate 
@@ -3383,21 +3175,6 @@ pointer_release :: proc(
     return
 }
 
-
-// keyboard input device 
-// The wl_keyboard interface represents one or more keyboards 
-// associated with a seat. 
-//  
-// Each wl_keyboard has the following logical state: 
-//  
-// - an active surface (possibly null), 
-// - the keys currently logically down, 
-// - the active modifiers, 
-// - the active group. 
-//  
-// By default, the active surface is null, the keys currently logically down 
-// are empty, the active modifiers and the active group are 0. 
-keyboard_interface: Interface
 
 Keyboard :: struct{} 
 
@@ -3440,7 +3217,7 @@ Keyboard_Listener :: struct {
     // the recipient, as MAP_SHARED may fail. 
     keymap: proc(
         data: rawptr,
-        keyboard: Keyboard,
+        keyboard: ^Keyboard,
         // keymap format 
         format: uint,
         // keymap file descriptor 
@@ -3464,7 +3241,7 @@ Keyboard_Listener :: struct {
     // events. The order of keys in the list is unspecified. 
     enter: proc(
         data: rawptr,
-        keyboard: Keyboard,
+        keyboard: ^Keyboard,
         // serial number of the enter event 
         serial: uint,
         // surface gaining keyboard focus 
@@ -3485,7 +3262,7 @@ Keyboard_Listener :: struct {
     // before this event. 
     leave: proc(
         data: rawptr,
-        keyboard: Keyboard,
+        keyboard: ^Keyboard,
         // serial number of the leave event 
         serial: uint,
         // surface that lost keyboard focus 
@@ -3517,7 +3294,7 @@ Keyboard_Listener :: struct {
     // responsibility of key repetition. 
     key: proc(
         data: rawptr,
-        keyboard: Keyboard,
+        keyboard: ^Keyboard,
         // serial number of the key event 
         serial: uint,
         // timestamp with millisecond granularity 
@@ -3543,7 +3320,7 @@ Keyboard_Listener :: struct {
     // group. 
     modifiers: proc(
         data: rawptr,
-        keyboard: Keyboard,
+        keyboard: ^Keyboard,
         // serial number of the modifiers event 
         serial: uint,
         // depressed modifiers 
@@ -3570,7 +3347,7 @@ Keyboard_Listener :: struct {
     // of wl_keyboard. 
     repeat_info: proc(
         data: rawptr,
-        keyboard: Keyboard,
+        keyboard: ^Keyboard,
         // the rate of repeating keys in characters per second 
         rate: int,
         // delay in milliseconds since key down until repeating starts 
@@ -3603,17 +3380,6 @@ keyboard_release :: proc(
 }
 
 
-// touchscreen input device 
-// The wl_touch interface represents a touchscreen 
-// associated with a seat. 
-//  
-// Touch interactions can consist of one or more contacts. 
-// For each contact, a series of events is generated, starting 
-// with a down event, followed by zero or more motion events, 
-// and ending with an up event. Events relating to the same 
-// contact point can be identified by the ID of the sequence. 
-touch_interface: Interface
-
 Touch :: struct{} 
 
 Touch_Listener :: struct {
@@ -3624,7 +3390,7 @@ Touch_Listener :: struct {
     // reused in the future. 
     down: proc(
         data: rawptr,
-        touch: Touch,
+        touch: ^Touch,
         // serial number of the touch down event 
         serial: uint,
         // timestamp with millisecond granularity 
@@ -3644,7 +3410,7 @@ Touch_Listener :: struct {
     // reused in a future touch down event. 
     up: proc(
         data: rawptr,
-        touch: Touch,
+        touch: ^Touch,
         // serial number of the touch up event 
         serial: uint,
         // timestamp with millisecond granularity 
@@ -3656,7 +3422,7 @@ Touch_Listener :: struct {
     // A touch point has changed coordinates. 
     motion: proc(
         data: rawptr,
-        touch: Touch,
+        touch: ^Touch,
         // timestamp with millisecond granularity 
         time: uint,
         // the unique ID of this touch point 
@@ -3677,7 +3443,7 @@ Touch_Listener :: struct {
     // previously known state. 
     frame: proc(
         data: rawptr,
-        touch: Touch,
+        touch: ^Touch,
     ),
     // touch session cancelled 
     // Sent if the compositor decides the touch stream is a global 
@@ -3690,7 +3456,7 @@ Touch_Listener :: struct {
     // No frame event is required after the cancel event. 
     cancel: proc(
         data: rawptr,
-        touch: Touch,
+        touch: ^Touch,
     ),
     // update shape of touch point 
     // Sent when a touchpoint has changed its shape. 
@@ -3720,7 +3486,7 @@ Touch_Listener :: struct {
     // shape if it did not receive this event. 
     shape: proc(
         data: rawptr,
-        touch: Touch,
+        touch: ^Touch,
         // the unique ID of this touch point 
         id: int,
         // length of the major axis in surface-local coordinates 
@@ -3754,7 +3520,7 @@ Touch_Listener :: struct {
     // orientation reports. 
     orientation: proc(
         data: rawptr,
-        touch: Touch,
+        touch: ^Touch,
         // the unique ID of this touch point 
         id: int,
         // angle between major axis and positive surface y-axis in degrees 
@@ -3786,15 +3552,6 @@ touch_release :: proc(
     return
 }
 
-
-// compositor output region 
-// An output describes part of the compositor geometry.  The 
-// compositor works in the 'compositor coordinate system' and an 
-// output corresponds to a rectangular area in that space that is 
-// actually visible.  This typically corresponds to a monitor that 
-// displays part of the compositor space.  This object is published 
-// as global during start up, or when a monitor is hotplugged. 
-output_interface: Interface
 
 Output :: struct{} 
 
@@ -3880,7 +3637,7 @@ Output_Listener :: struct {
     // clients should use name and description. 
     geometry: proc(
         data: rawptr,
-        output: Output,
+        output: ^Output,
         // x position within the global compositor space 
         x: int,
         // y position within the global compositor space 
@@ -3934,7 +3691,7 @@ Output_Listener :: struct {
     // refresh rate or the size. 
     mode: proc(
         data: rawptr,
-        output: Output,
+        output: ^Output,
         // bitfield of mode flags 
         flags: uint,
         // width of the mode in hardware units 
@@ -3952,7 +3709,7 @@ Output_Listener :: struct {
     // atomic, even if they happen via multiple events. 
     done: proc(
         data: rawptr,
-        output: Output,
+        output: ^Output,
     ),
     // output scaling properties 
     // This event contains scaling geometry information 
@@ -3975,7 +3732,7 @@ Output_Listener :: struct {
     // The scale event will be followed by a done event. 
     scale: proc(
         data: rawptr,
-        output: Output,
+        output: ^Output,
         // scaling factor of output 
         factor: int,
     ),
@@ -4010,7 +3767,7 @@ Output_Listener :: struct {
     // The name event will be followed by a done event. 
     name: proc(
         data: rawptr,
-        output: Output,
+        output: ^Output,
         // output name 
         name: cstring,
     ),
@@ -4031,7 +3788,7 @@ Output_Listener :: struct {
     // The description event will be followed by a done event. 
     description: proc(
         data: rawptr,
-        output: Output,
+        output: ^Output,
         // output description 
         description: cstring,
     ),
@@ -4062,13 +3819,6 @@ output_release :: proc(
     return
 }
 
-
-// region interface 
-// A region object describes an area. 
-//  
-// Region objects are used to describe the opaque and input 
-// regions of a surface. 
-region_interface: Interface
 
 Region :: struct{} 
 
@@ -4154,28 +3904,6 @@ region_subtract :: proc(
 }
 
 
-// sub-surface compositing 
-// The global interface exposing sub-surface compositing capabilities. 
-// A wl_surface, that has sub-surfaces associated, is called the 
-// parent surface. Sub-surfaces can be arbitrarily nested and create 
-// a tree of sub-surfaces. 
-//  
-// The root surface in a tree of sub-surfaces is the main 
-// surface. The main surface cannot be a sub-surface, because 
-// sub-surfaces must always have a parent. 
-//  
-// A main surface with its sub-surfaces forms a (compound) window. 
-// For window management purposes, this set of wl_surface objects is 
-// to be considered as a single window, and it should also behave as 
-// such. 
-//  
-// The aim of sub-surfaces is to offload some of the compositing work 
-// within a window from clients to the compositor. A prime example is 
-// a video player with decorations and video in separate wl_surface 
-// objects. This should allow the compositor to pass YUV video buffer 
-// processing to dedicated overlay hardware when possible. 
-subcompositor_interface: Interface
-
 Subcompositor :: struct{} 
 
 //  
@@ -4239,9 +3967,9 @@ subcompositor_destroy :: proc(
 subcompositor_get_subsurface :: proc(
     subcompositor: ^Subcompositor,
     // the surface to be turned into a sub-surface 
-    surface: Object,
+    surface: ^Surface,
     // the parent surface 
-    parent: Object,
+    parent: ^Surface,
 ) -> (id: /* the new sub-surface object ID */ ^Subsurface) {
     id = cast(^Subsurface)proxy_marshal_flags(
         cast(^Proxy)subcompositor,
@@ -4256,61 +3984,6 @@ subcompositor_get_subsurface :: proc(
     return
 }
 
-
-// sub-surface interface to a wl_surface 
-// An additional interface to a wl_surface object, which has been 
-// made a sub-surface. A sub-surface has one parent surface. A 
-// sub-surface's size and position are not limited to that of the parent. 
-// Particularly, a sub-surface is not automatically clipped to its 
-// parent's area. 
-//  
-// A sub-surface becomes mapped, when a non-NULL wl_buffer is applied 
-// and the parent surface is mapped. The order of which one happens 
-// first is irrelevant. A sub-surface is hidden if the parent becomes 
-// hidden, or if a NULL wl_buffer is applied. These rules apply 
-// recursively through the tree of surfaces. 
-//  
-// The behaviour of a wl_surface.commit request on a sub-surface 
-// depends on the sub-surface's mode. The possible modes are 
-// synchronized and desynchronized, see methods 
-// wl_subsurface.set_sync and wl_subsurface.set_desync. Synchronized 
-// mode caches the wl_surface state to be applied when the parent's 
-// state gets applied, and desynchronized mode applies the pending 
-// wl_surface state directly. A sub-surface is initially in the 
-// synchronized mode. 
-//  
-// Sub-surfaces also have another kind of state, which is managed by 
-// wl_subsurface requests, as opposed to wl_surface requests. This 
-// state includes the sub-surface position relative to the parent 
-// surface (wl_subsurface.set_position), and the stacking order of 
-// the parent and its sub-surfaces (wl_subsurface.place_above and 
-// .place_below). This state is applied when the parent surface's 
-// wl_surface state is applied, regardless of the sub-surface's mode. 
-// As the exception, set_sync and set_desync are effective immediately. 
-//  
-// The main surface can be thought to be always in desynchronized mode, 
-// since it does not have a parent in the sub-surfaces sense. 
-//  
-// Even if a sub-surface is in desynchronized mode, it will behave as 
-// in synchronized mode, if its parent surface behaves as in 
-// synchronized mode. This rule is applied recursively throughout the 
-// tree of surfaces. This means, that one can set a sub-surface into 
-// synchronized mode, and then assume that all its child and grand-child 
-// sub-surfaces are synchronized, too, without explicitly setting them. 
-//  
-// Destroying a sub-surface takes effect immediately. If you need to 
-// synchronize the removal of a sub-surface to the parent surface update, 
-// unmap the sub-surface first by attaching a NULL wl_buffer, update parent, 
-// and then destroy the sub-surface. 
-//  
-// If the parent wl_surface object is destroyed, the sub-surface is 
-// unmapped. 
-//  
-// A sub-surface never has the keyboard focus of any seat. 
-//  
-// The wl_surface.offset request is ignored: clients must use set_position 
-// instead to move the sub-surface. 
-subsurface_interface: Interface
 
 Subsurface :: struct{} 
 
@@ -4402,7 +4075,7 @@ subsurface_set_position :: proc(
 subsurface_place_above :: proc(
     subsurface: ^Subsurface,
     // the reference surface 
-    sibling: Object,
+    sibling: ^Surface,
 ){
     proxy_marshal_flags(
         cast(^Proxy)subsurface,
@@ -4421,7 +4094,7 @@ subsurface_place_above :: proc(
 subsurface_place_below :: proc(
     subsurface: ^Subsurface,
     // the reference surface 
-    sibling: Object,
+    sibling: ^Surface,
 ){
     proxy_marshal_flags(
         cast(^Proxy)subsurface,
@@ -4495,11 +4168,6 @@ subsurface_set_desync :: proc(
 }
 
 
-// wayland protocol fixes 
-// This global fixes problems with other core-protocol interfaces that 
-// cannot be fixed in these interfaces themselves. 
-fixes_interface: Interface
-
 Fixes :: struct{} 
 
 Fixes_Listener :: struct {
@@ -4542,7 +4210,7 @@ fixes_destroy :: proc(
 fixes_destroy_registry :: proc(
     fixes: ^Fixes,
     // the registry to destroy 
-    registry: Object,
+    registry: ^Registry,
 ){
     proxy_marshal_flags(
         cast(^Proxy)fixes,
