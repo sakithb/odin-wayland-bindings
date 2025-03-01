@@ -30,7 +30,7 @@ Display_Listener :: struct {
     // of the error, for (debugging) convenience. 
     error: proc(
         data: rawptr,
-        display: Interface,
+        display: Display,
         // object where the error occurred 
         object_id: Object,
         // error code 
@@ -46,7 +46,7 @@ Display_Listener :: struct {
     // it will know that it can safely reuse the object ID. 
     delete_id: proc(
         data: rawptr,
-        display: Interface,
+        display: Display,
         // deleted object ID 
         id: uint,
     ),
@@ -146,7 +146,7 @@ Registry_Listener :: struct {
     // given version of the given interface. 
     global: proc(
         data: rawptr,
-        registry: Interface,
+        registry: Registry,
         // numeric name of the global object 
         name: uint,
         // interface implemented by the object 
@@ -167,7 +167,7 @@ Registry_Listener :: struct {
     // the global going away and a client sending a request to it. 
     global_remove: proc(
         data: rawptr,
-        registry: Interface,
+        registry: Registry,
         // numeric name of the global object 
         name: uint,
     ),
@@ -222,7 +222,7 @@ Callback_Listener :: struct {
     // Notify the client when the related request is done. 
     done: proc(
         data: rawptr,
-        callback: Interface,
+        callback: Callback,
         // request-specific data for the callback 
         callback_data: uint,
     ),
@@ -697,7 +697,7 @@ Shm_Listener :: struct {
     // argb8888 and xrgb8888. 
     format: proc(
         data: rawptr,
-        shm: Interface,
+        shm: Shm,
         // buffer pixel format 
         format: uint,
     ),
@@ -793,7 +793,7 @@ Buffer_Listener :: struct {
     // optimization for GL(ES) compositors with wl_shm clients. 
     release: proc(
         data: rawptr,
-        buffer: Interface,
+        buffer: Buffer,
     ),
 }
 
@@ -855,7 +855,7 @@ Data_Offer_Listener :: struct {
     // event per offered mime type. 
     offer: proc(
         data: rawptr,
-        data_offer: Interface,
+        data_offer: Data_Offer,
         // offered mime type 
         mime_type: cstring,
     ),
@@ -866,7 +866,7 @@ Data_Offer_Listener :: struct {
     // wl_data_source.set_actions. 
     source_actions: proc(
         data: rawptr,
-        data_offer: Interface,
+        data_offer: Data_Offer,
         // actions offered by the data source 
         source_actions: uint,
     ),
@@ -908,7 +908,7 @@ Data_Offer_Listener :: struct {
     // must happen before the call to wl_data_offer.finish. 
     action: proc(
         data: rawptr,
-        data_offer: Interface,
+        data_offer: Data_Offer,
         // action selected by the compositor 
         dnd_action: uint,
     ),
@@ -1113,7 +1113,7 @@ Data_Source_Listener :: struct {
     // Used for feedback during drag-and-drop. 
     target: proc(
         data: rawptr,
-        data_source: Interface,
+        data_source: Data_Source,
         // mime type accepted by the target 
         mime_type: cstring,
     ),
@@ -1123,7 +1123,7 @@ Data_Source_Listener :: struct {
     // close it. 
     send: proc(
         data: rawptr,
-        data_source: Interface,
+        data_source: Data_Source,
         // mime type for the data 
         mime_type: cstring,
         // file descriptor for the data 
@@ -1152,7 +1152,7 @@ Data_Source_Listener :: struct {
     // source. 
     cancelled: proc(
         data: rawptr,
-        data_source: Interface,
+        data_source: Data_Source,
     ),
     // the drag-and-drop operation physically finished 
     // The user performed the drop action. This event does not indicate 
@@ -1166,7 +1166,7 @@ Data_Source_Listener :: struct {
     // not be destroyed here. 
     dnd_drop_performed: proc(
         data: rawptr,
-        data_source: Interface,
+        data_source: Data_Source,
     ),
     // the drag-and-drop operation concluded 
     // The drop destination finished interoperating with this data 
@@ -1177,7 +1177,7 @@ Data_Source_Listener :: struct {
     // source can now delete the transferred data. 
     dnd_finished: proc(
         data: rawptr,
-        data_source: Interface,
+        data_source: Data_Source,
     ),
     // notify the selected action 
     // This event indicates the action selected by the compositor after 
@@ -1207,7 +1207,7 @@ Data_Source_Listener :: struct {
     // they reflect the current action. 
     action: proc(
         data: rawptr,
-        data_source: Interface,
+        data_source: Data_Source,
         // action selected by the compositor 
         dnd_action: uint,
     ),
@@ -1318,7 +1318,7 @@ Data_Device_Listener :: struct {
     // mime types it offers. 
     data_offer: proc(
         data: rawptr,
-        data_device: Interface,
+        data_device: Data_Device,
         // the new data_offer object 
         id: Interface,
     ),
@@ -1329,7 +1329,7 @@ Data_Device_Listener :: struct {
     // coordinates. 
     enter: proc(
         data: rawptr,
-        data_device: Interface,
+        data_device: Data_Device,
         // serial number of the enter event 
         serial: uint,
         // client surface entered 
@@ -1347,7 +1347,7 @@ Data_Device_Listener :: struct {
     // wl_data_offer introduced at enter time at this point. 
     leave: proc(
         data: rawptr,
-        data_device: Interface,
+        data_device: Data_Device,
     ),
     // drag-and-drop session motion 
     // This event is sent when the drag-and-drop pointer moves within 
@@ -1356,7 +1356,7 @@ Data_Device_Listener :: struct {
     // coordinates. 
     motion: proc(
         data: rawptr,
-        data_device: Interface,
+        data_device: Data_Device,
         // timestamp with millisecond granularity 
         time: uint,
         // surface-local x coordinate 
@@ -1380,7 +1380,7 @@ Data_Device_Listener :: struct {
     // to cancel the operation. 
     drop: proc(
         data: rawptr,
-        data_device: Interface,
+        data_device: Data_Device,
     ),
     // advertise new selection 
     // The selection event is sent out to notify the client of a new 
@@ -1397,7 +1397,7 @@ Data_Device_Listener :: struct {
     // data_offer, if any, upon receiving this event. 
     selection: proc(
         data: rawptr,
-        data_device: Interface,
+        data_device: Data_Device,
         // selection data_offer object 
         id: Object,
     ),
@@ -1737,7 +1737,7 @@ Shell_Surface_Listener :: struct {
     // requests. A client is expected to reply with a pong request. 
     ping: proc(
         data: rawptr,
-        shell_surface: Interface,
+        shell_surface: Shell_Surface,
         // serial number of the ping 
         serial: uint,
     ),
@@ -1761,7 +1761,7 @@ Shell_Surface_Listener :: struct {
     // in surface-local coordinates. 
     configure: proc(
         data: rawptr,
-        shell_surface: Interface,
+        shell_surface: Shell_Surface,
         // how the surface was resized 
         edges: uint,
         // new width of the surface 
@@ -1775,7 +1775,7 @@ Shell_Surface_Listener :: struct {
     // to the client owning the popup surface. 
     popup_done: proc(
         data: rawptr,
-        shell_surface: Interface,
+        shell_surface: Shell_Surface,
     ),
 }
 
@@ -2171,7 +2171,7 @@ Surface_Listener :: struct {
     // Note that a surface may be overlapping with zero or more outputs. 
     enter: proc(
         data: rawptr,
-        surface: Interface,
+        surface: Surface,
         // output entered by the surface 
         output: Object,
     ),
@@ -2187,7 +2187,7 @@ Surface_Listener :: struct {
     // used instead. 
     leave: proc(
         data: rawptr,
-        surface: Interface,
+        surface: Surface,
         // output left by the surface 
         output: Object,
     ),
@@ -2206,7 +2206,7 @@ Surface_Listener :: struct {
     // The compositor shall emit a scale value greater than 0. 
     preferred_buffer_scale: proc(
         data: rawptr,
-        surface: Interface,
+        surface: Surface,
         // preferred scaling factor 
         factor: int,
     ),
@@ -2222,7 +2222,7 @@ Surface_Listener :: struct {
     // surface buffer more efficiently. 
     preferred_buffer_transform: proc(
         data: rawptr,
-        surface: Interface,
+        surface: Surface,
         // preferred transform 
         transform: uint,
     ),
@@ -2784,7 +2784,7 @@ Seat_Listener :: struct {
     // keyboard and touch capabilities, respectively. 
     capabilities: proc(
         data: rawptr,
-        seat: Interface,
+        seat: Seat,
         // capabilities of the seat 
         capabilities: uint,
     ),
@@ -2807,7 +2807,7 @@ Seat_Listener :: struct {
     // destroyed and re-created later. 
     name: proc(
         data: rawptr,
-        seat: Interface,
+        seat: Seat,
         // seat identifier 
         name: cstring,
     ),
@@ -2995,7 +2995,7 @@ Pointer_Listener :: struct {
     // an appropriate pointer image with the set_cursor request. 
     enter: proc(
         data: rawptr,
-        pointer: Interface,
+        pointer: Pointer,
         // serial number of the enter event 
         serial: uint,
         // surface entered by the pointer 
@@ -3013,7 +3013,7 @@ Pointer_Listener :: struct {
     // for the new focus. 
     leave: proc(
         data: rawptr,
-        pointer: Interface,
+        pointer: Pointer,
         // serial number of the leave event 
         serial: uint,
         // surface left by the pointer 
@@ -3025,7 +3025,7 @@ Pointer_Listener :: struct {
     // focused surface. 
     motion: proc(
         data: rawptr,
-        pointer: Interface,
+        pointer: Pointer,
         // timestamp with millisecond granularity 
         time: uint,
         // surface-local x coordinate 
@@ -3050,7 +3050,7 @@ Pointer_Listener :: struct {
     // protocol. 
     button: proc(
         data: rawptr,
-        pointer: Interface,
+        pointer: Pointer,
         // serial number of the button event 
         serial: uint,
         // timestamp with millisecond granularity 
@@ -3079,7 +3079,7 @@ Pointer_Listener :: struct {
     // scroll distance. 
     axis: proc(
         data: rawptr,
-        pointer: Interface,
+        pointer: Pointer,
         // timestamp with millisecond granularity 
         time: uint,
         // axis type 
@@ -3124,7 +3124,7 @@ Pointer_Listener :: struct {
     // groups. 
     frame: proc(
         data: rawptr,
-        pointer: Interface,
+        pointer: Pointer,
     ),
     // axis source event 
     // Source information for scroll and other axes. 
@@ -3154,7 +3154,7 @@ Pointer_Listener :: struct {
     // not guaranteed. 
     axis_source: proc(
         data: rawptr,
-        pointer: Interface,
+        pointer: Pointer,
         // source of the axis event 
         axis_source: uint,
     ),
@@ -3175,7 +3175,7 @@ Pointer_Listener :: struct {
     // preceding wl_pointer.axis event. 
     axis_stop: proc(
         data: rawptr,
-        pointer: Interface,
+        pointer: Pointer,
         // timestamp with millisecond granularity 
         time: uint,
         // the axis stopped with this event 
@@ -3214,7 +3214,7 @@ Pointer_Listener :: struct {
     // not guaranteed. 
     axis_discrete: proc(
         data: rawptr,
-        pointer: Interface,
+        pointer: Pointer,
         // axis type 
         axis: uint,
         // number of steps 
@@ -3244,7 +3244,7 @@ Pointer_Listener :: struct {
     // not guaranteed. 
     axis_value120: proc(
         data: rawptr,
-        pointer: Interface,
+        pointer: Pointer,
         // axis type 
         axis: uint,
         // scroll distance as fraction of 120 
@@ -3288,7 +3288,7 @@ Pointer_Listener :: struct {
     // guaranteed. 
     axis_relative_direction: proc(
         data: rawptr,
-        pointer: Interface,
+        pointer: Pointer,
         // axis type 
         axis: uint,
         // physical direction relative to axis motion 
@@ -3440,7 +3440,7 @@ Keyboard_Listener :: struct {
     // the recipient, as MAP_SHARED may fail. 
     keymap: proc(
         data: rawptr,
-        keyboard: Interface,
+        keyboard: Keyboard,
         // keymap format 
         format: uint,
         // keymap file descriptor 
@@ -3464,7 +3464,7 @@ Keyboard_Listener :: struct {
     // events. The order of keys in the list is unspecified. 
     enter: proc(
         data: rawptr,
-        keyboard: Interface,
+        keyboard: Keyboard,
         // serial number of the enter event 
         serial: uint,
         // surface gaining keyboard focus 
@@ -3485,7 +3485,7 @@ Keyboard_Listener :: struct {
     // before this event. 
     leave: proc(
         data: rawptr,
-        keyboard: Interface,
+        keyboard: Keyboard,
         // serial number of the leave event 
         serial: uint,
         // surface that lost keyboard focus 
@@ -3517,7 +3517,7 @@ Keyboard_Listener :: struct {
     // responsibility of key repetition. 
     key: proc(
         data: rawptr,
-        keyboard: Interface,
+        keyboard: Keyboard,
         // serial number of the key event 
         serial: uint,
         // timestamp with millisecond granularity 
@@ -3543,7 +3543,7 @@ Keyboard_Listener :: struct {
     // group. 
     modifiers: proc(
         data: rawptr,
-        keyboard: Interface,
+        keyboard: Keyboard,
         // serial number of the modifiers event 
         serial: uint,
         // depressed modifiers 
@@ -3570,7 +3570,7 @@ Keyboard_Listener :: struct {
     // of wl_keyboard. 
     repeat_info: proc(
         data: rawptr,
-        keyboard: Interface,
+        keyboard: Keyboard,
         // the rate of repeating keys in characters per second 
         rate: int,
         // delay in milliseconds since key down until repeating starts 
@@ -3624,7 +3624,7 @@ Touch_Listener :: struct {
     // reused in the future. 
     down: proc(
         data: rawptr,
-        touch: Interface,
+        touch: Touch,
         // serial number of the touch down event 
         serial: uint,
         // timestamp with millisecond granularity 
@@ -3644,7 +3644,7 @@ Touch_Listener :: struct {
     // reused in a future touch down event. 
     up: proc(
         data: rawptr,
-        touch: Interface,
+        touch: Touch,
         // serial number of the touch up event 
         serial: uint,
         // timestamp with millisecond granularity 
@@ -3656,7 +3656,7 @@ Touch_Listener :: struct {
     // A touch point has changed coordinates. 
     motion: proc(
         data: rawptr,
-        touch: Interface,
+        touch: Touch,
         // timestamp with millisecond granularity 
         time: uint,
         // the unique ID of this touch point 
@@ -3677,7 +3677,7 @@ Touch_Listener :: struct {
     // previously known state. 
     frame: proc(
         data: rawptr,
-        touch: Interface,
+        touch: Touch,
     ),
     // touch session cancelled 
     // Sent if the compositor decides the touch stream is a global 
@@ -3690,7 +3690,7 @@ Touch_Listener :: struct {
     // No frame event is required after the cancel event. 
     cancel: proc(
         data: rawptr,
-        touch: Interface,
+        touch: Touch,
     ),
     // update shape of touch point 
     // Sent when a touchpoint has changed its shape. 
@@ -3720,7 +3720,7 @@ Touch_Listener :: struct {
     // shape if it did not receive this event. 
     shape: proc(
         data: rawptr,
-        touch: Interface,
+        touch: Touch,
         // the unique ID of this touch point 
         id: int,
         // length of the major axis in surface-local coordinates 
@@ -3754,7 +3754,7 @@ Touch_Listener :: struct {
     // orientation reports. 
     orientation: proc(
         data: rawptr,
-        touch: Interface,
+        touch: Touch,
         // the unique ID of this touch point 
         id: int,
         // angle between major axis and positive surface y-axis in degrees 
@@ -3880,7 +3880,7 @@ Output_Listener :: struct {
     // clients should use name and description. 
     geometry: proc(
         data: rawptr,
-        output: Interface,
+        output: Output,
         // x position within the global compositor space 
         x: int,
         // y position within the global compositor space 
@@ -3934,7 +3934,7 @@ Output_Listener :: struct {
     // refresh rate or the size. 
     mode: proc(
         data: rawptr,
-        output: Interface,
+        output: Output,
         // bitfield of mode flags 
         flags: uint,
         // width of the mode in hardware units 
@@ -3952,7 +3952,7 @@ Output_Listener :: struct {
     // atomic, even if they happen via multiple events. 
     done: proc(
         data: rawptr,
-        output: Interface,
+        output: Output,
     ),
     // output scaling properties 
     // This event contains scaling geometry information 
@@ -3975,7 +3975,7 @@ Output_Listener :: struct {
     // The scale event will be followed by a done event. 
     scale: proc(
         data: rawptr,
-        output: Interface,
+        output: Output,
         // scaling factor of output 
         factor: int,
     ),
@@ -4010,7 +4010,7 @@ Output_Listener :: struct {
     // The name event will be followed by a done event. 
     name: proc(
         data: rawptr,
-        output: Interface,
+        output: Output,
         // output name 
         name: cstring,
     ),
@@ -4031,7 +4031,7 @@ Output_Listener :: struct {
     // The description event will be followed by a done event. 
     description: proc(
         data: rawptr,
-        output: Interface,
+        output: Output,
         // output description 
         description: cstring,
     ),

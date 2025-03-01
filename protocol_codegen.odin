@@ -280,7 +280,7 @@ gen_enum :: proc(enm: Enum) -> (s: string, err: mem.Allocator_Error) {
     return
 }
 
-gen_event :: proc(ev: Event, iface_name: string) -> (s: string, err: mem.Allocator_Error) {
+gen_event :: proc(ev: Event, iface_name: string, iface_type: string) -> (s: string, err: mem.Allocator_Error) {
     b := strings.builder_make() or_return
 
     fmt.sbprint(&b, gen_description(ev.description, 1) or_return)
@@ -288,7 +288,7 @@ gen_event :: proc(ev: Event, iface_name: string) -> (s: string, err: mem.Allocat
     fmt.sbprintf(&b, "    %s: proc(\n", ev.name)
 
     fmt.sbprint(&b, "        data: rawptr,\n")
-    fmt.sbprintf(&b, "        %s: Interface,\n", iface_name)
+    fmt.sbprintf(&b, "        %s: %s,\n", iface_name, iface_type)
 
     for arg in ev.args {
         fmt.sbprintf(&b, "        // %s \n", arg.summary)
@@ -419,7 +419,7 @@ gen_interface :: proc(iface: Interface) -> (s: string, err: mem.Allocator_Error)
     fmt.sbprintf(&b, "%s_Listener :: struct {{\n", iface.type_name)
 
     for event in iface.events {
-        fmt.sbprint(&b, gen_event(event, iface.name) or_return)
+        fmt.sbprint(&b, gen_event(event, iface.name, iface.type_name) or_return)
     }
 
     fmt.sbprint(&b, "}\n\n")
