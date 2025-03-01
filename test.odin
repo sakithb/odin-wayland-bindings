@@ -18,7 +18,7 @@ global_registry_handler :: proc(
 	version: uint,
 ) {
 	fmt.printf("Got a registry event for  %s with id %d \r\n", interface, id)
-	if (interface == "compositor") {
+	if (interface == "wl_compositor") {
 		compositor =
 		cast(^wl.Compositor)wl.registry_bind(
 			registry,

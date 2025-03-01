@@ -377,11 +377,11 @@ gen_request :: proc(req: Request, index: int, iface_name: string, iface_type_nam
 
     for arg in req.args {
         if arg.type == "Interface" {
-            fmt.sbprint(&b, "        nil,\n")
             if r_empty_iface {
                 fmt.sbprint(&b, "        interface.name,\n")
                 fmt.sbprint(&b, "        version,\n")
             }
+            fmt.sbprint(&b, "        nil,\n")
         } else {
             fmt.sbprintf(&b, "        %s,\n", arg.name)
         }
@@ -454,6 +454,8 @@ main :: proc() {
 
     fmt.sbprint(&b, "package wayland_client\n\n")
 
+    fmt.sbprint(&b, "foreign import wl \"system:wayland-client\"\n\n")
+
     interface_links := strings.builder_make()
     fmt.sbprint(&interface_links, "@(default_calling_convention=\"c\", link_prefix=\"wl_\")\n")
     fmt.sbprint(&interface_links, "foreign wl {\n")
@@ -488,8 +490,7 @@ main :: proc() {
     }
 
     fmt.sbprint(&interface_links, "}\n")
-
-    fmt.print(strings.to_string(interface_links))
+    fmt.sbprint(&b, strings.to_string(interface_links))
 
     ok := os.write_entire_file("bindings/protocol.odin", transmute([]u8)strings.to_string(b))
     if !ok {
