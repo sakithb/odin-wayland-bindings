@@ -406,9 +406,11 @@ TMPL_FNS :: [?]string{
 }
 
 Interface_Gen :: struct {
+    interfaces: string,
     requests: string,
     events: string,
     var_str: string,
+    var_str_init: string,
 
     struct_str: string,
     enums: [dynamic]string,
@@ -418,11 +420,51 @@ Interface_Gen :: struct {
     request_fns: [dynamic]string,
 }
 
+gen_description :: proc(desc: Maybe(Description), summary: Maybe(string) = nil, level: int = 0) -> string {
+    desc, desc_ok := desc.?;
+    summary, summary_ok := summary.?;
+    if !desc_ok && !summary_ok do return ""
+
+    has_summary := summary_ok && summary != ""
+
+    v, v_ok := desc.value.?
+
+    has_v := v_ok && v != ""
+    has_s := desc.summary != ""
+
+    if !has_v && !has_s && !has_summary do return ""
+        
+    sb := strings.builder_make()
+    
+    indent, indent_err := strings.repeat(" ", level * 4)
+    fmt.ensuref(indent_err == nil, "could not repeat indent")
+
+    fmt.sbprintfln(&sb, "%s/*", indent)
+
+    if has_summary {
+        fmt.sbprintfln(&sb, "%s * %s", indent, summary)
+    }
+
+    if has_s {
+        fmt.sbprintfln(&sb, "%s * %s", indent, desc.summary)
+    }
+
+    if has_v {
+        lines, err := strings.split_lines(v)
+        fmt.ensuref(err == nil, "could not split description into lines")
+        for line in lines {
+            fmt.sbprintfln(&sb, "%s * %s", indent, strings.trim_space(line))
+        }
+    }
+
+    fmt.sbprintfln(&sb, "%s */", indent)
+
+    return strings.to_string(sb)
+}
+
 gen_interface :: proc(ifaces: []Interface, iface: ^Interface) -> (iface_gen: Interface_Gen) {
     sb := strings.builder_make()
     defer strings.builder_destroy(&sb)
-
-    // Requests
 
     iname_sc := strings.trim_prefix(iface.name, "wl_")
     iname_ac, iname_ac_err := strings.to_ada_case(iname_sc)
@@ -430,94 +472,116 @@ gen_interface :: proc(ifaces: []Interface, iface: ^Interface) -> (iface_gen: Int
     iname_ssc, iname_ssc_err := strings.to_screaming_snake_case(iname_sc)
     fmt.ensuref(iname_ssc_err == nil, "could not convert interface name to screaming snake case: %s", iname_sc)
 
-    //fmt.sbprintfln(&sb, "%s_request_interfaces := []^Interface{{", iname_sc)
-    //for req in iface.requests {
-    //    for arg in req.args {
-    //        if arg_iface, ok := arg.interface.(string); ok {
-    //            fmt.sbprintfln(&sb, " &%s_interface,", strings.trim_prefix(arg_iface, "wl_"))
-    //        } else {
-    //            fmt.sbprintln(&sb, " nil,")
-    //        }
-    //    }
-    //}
-    //fmt.sbprintln(&sb, "}")
+    has_reqs := len(iface.requests) > 0
+    has_evs := len(iface.events) > 0
 
-    fmt.sbprintfln(&sb, "%s_requests := []Message{{", iname_sc)
-    //interface_offset := 0
-    for req in iface.requests {
-        fmt.sbprintf(&sb, "    {{ %q, \"", req.name)
-        for arg in req.args {
-            if arg.nullable do fmt.sbprint(&sb, "?")
-            strings.write_byte(&sb, arg_type_syms[arg.type])
-        }
-        //fmt.sbprintfln(&sb, "\", raw_data(%s_request_interfaces[%d:]) }},", iname_sc, interface_offset)
-        //interface_offset += len(req.args)
-        fmt.sbprintf(&sb, "\", raw_data([]^Interface{{")
-        for arg in req.args {
-            if arg_iface, ok := arg.interface.(string); ok {
-                fmt.sbprintf(&sb, " &%s_interface,", strings.trim_prefix(arg_iface, "wl_"))
-            } else {
-                fmt.sbprint(&sb, " nil,")
+    // Request and event interfaces
+    if has_reqs || has_evs {
+        fmt.sbprintfln(&sb, "%s_interfaces := [?]^Interface{{", iname_sc)
+        for req in iface.requests {
+            for arg in req.args {
+                if arg_iface, ok := arg.interface.(string); ok {
+                    fmt.sbprintfln(&sb, " &%s_interface,", strings.trim_prefix(arg_iface, "wl_"))
+                } else {
+                    fmt.sbprintln(&sb, " nil,")
+                }
             }
         }
-        fmt.sbprintln(&sb, " }) },")
-    }
-    fmt.sbprintln(&sb, "}")
+        for ev in iface.events {
+            for arg in ev.args {
+                if arg_iface, ok := arg.interface.(string); ok {
+                    fmt.sbprintfln(&sb, " &%s_interface,", strings.trim_prefix(arg_iface, "wl_"))
+                } else {
+                    fmt.sbprintln(&sb, " nil,")
+                }
+            }
+        }
+        fmt.sbprintln(&sb, "}")
 
-    iface_gen.requests = strings.clone_from_bytes(sb.buf[:])
-    strings.builder_reset(&sb)
+        iface_gen.interfaces = strings.clone_from_bytes(sb.buf[:])
+        strings.builder_reset(&sb)
+    }
+
+    // Requests
+
+    interface_offset := 0
+
+    if has_reqs {
+        fmt.sbprintfln(&sb, "%s_requests := [?]Message{{", iname_sc)
+        for req in iface.requests {
+            fmt.sbprintf(&sb, "    {{ %q, \"", req.name)
+            for arg in req.args {
+                if arg.nullable do fmt.sbprint(&sb, "?")
+                strings.write_byte(&sb, arg_type_syms[arg.type])
+            }
+            if len(req.args) > 0 {
+                fmt.sbprintfln(&sb, "\", &%s_interfaces[%d] }},", iname_sc, interface_offset)
+            } else {
+                fmt.sbprintln(&sb, "\", nil },")
+            }
+            interface_offset += len(req.args)
+        }
+        fmt.sbprintln(&sb, "}")
+
+        iface_gen.requests = strings.clone_from_bytes(sb.buf[:])
+        strings.builder_reset(&sb)
+    }
 
     // Events
 
-    //fmt.sbprintfln(&sb, "%s_event_interfaces := []^Interface{{", iname_sc)
-    //for ev in iface.events {
-    //    for arg in ev.args {
-    //        if arg_iface, ok := arg.interface.(string); ok {
-    //            fmt.sbprintfln(&sb, " &%s_interface,", strings.trim_prefix(arg_iface, "wl_"))
-    //        } else {
-    //            fmt.sbprintln(&sb, " nil,")
-    //        }
-    //    }
-    //}
-    //fmt.sbprintln(&sb, "}")
-
-    fmt.sbprintfln(&sb, "%s_events := []Message{{", iname_sc)
-    //interface_offset = 0
-    for ev in iface.events {
-        fmt.sbprintf(&sb, "    {{ %q, \"", ev.name)
-        for arg in ev.args {
-            if arg.nullable do fmt.sbprint(&sb, "?")
-            strings.write_byte(&sb, arg_type_syms[arg.type])
-        }
-        //fmt.sbprintfln(&sb, "\", raw_data(%s_event_interfaces[%d:]) }},", iname_sc, interface_offset)
-        //interface_offset += len(ev.args)
-        fmt.sbprintf(&sb, "\", raw_data([]^Interface{{")
-        for arg in ev.args {
-            if arg_iface, ok := arg.interface.(string); ok {
-                fmt.sbprintf(&sb, " &%s_interface,", strings.trim_prefix(arg_iface, "wl_"))
-            } else {
-                fmt.sbprint(&sb, " nil,")
+    if has_evs {
+        fmt.sbprintfln(&sb, "%s_events := [?]Message{{", iname_sc)
+        for ev in iface.events {
+            fmt.sbprintf(&sb, "    {{ %q, \"", ev.name)
+            for arg in ev.args {
+                if arg.nullable do fmt.sbprint(&sb, "?")
+                strings.write_byte(&sb, arg_type_syms[arg.type])
             }
+            if len(ev.args) > 0 {
+                fmt.sbprintfln(&sb, "\", &%s_interfaces[%d] }},", iname_sc, interface_offset)
+            } else {
+                fmt.sbprintln(&sb, "\", nil },")
+            }
+            interface_offset += len(ev.args)
         }
-        fmt.sbprintln(&sb, " }) },")
-    }
-    fmt.sbprintln(&sb, "}")
+        fmt.sbprintln(&sb, "}")
 
-    iface_gen.events = strings.clone_from_bytes(sb.buf[:])
-    strings.builder_reset(&sb)
+        iface_gen.events = strings.clone_from_bytes(sb.buf[:])
+        strings.builder_reset(&sb)
+    }
 
     // Interface definition
 
+    fmt.sbprint(&sb, gen_description(iface.description))
     fmt.sbprintfln(&sb, "%s_interface := Interface{{", iname_sc)
     fmt.sbprintfln(&sb, "    %q,", iface.name)
     fmt.sbprintfln(&sb, "    %d,", iface.version)
-    fmt.sbprintfln(&sb, "    %d,", len(iface.requests))
-    fmt.sbprintfln(&sb, "    raw_data(%s_requests),", iname_sc)
-    fmt.sbprintfln(&sb, "    %d,", len(iface.events))
-    fmt.sbprintfln(&sb, "    raw_data(%s_events),", iname_sc)
+    fmt.sbprintln(&sb, "    0,")
+    fmt.sbprintln(&sb, "    nil,")
+    fmt.sbprintln(&sb, "    0,")
+    fmt.sbprintln(&sb, "    nil,")
     fmt.sbprintln(&sb, "}")
 
     iface_gen.var_str = strings.clone_from_bytes(sb.buf[:])
+    strings.builder_reset(&sb)
+
+    // Interface init
+
+    if has_reqs || has_evs {
+        fmt.sbprintln(&sb, "@(init)")
+        fmt.sbprintfln(&sb, "%s_interface_init :: proc() {{", iname_sc)
+        if has_reqs {
+            fmt.sbprintfln(&sb, "    %[0]s_interface.method_count = len(%[0]s_requests)", iname_sc)
+            fmt.sbprintfln(&sb, "    %[0]s_interface.methods = &%[0]s_requests[0]", iname_sc)
+        }
+        if has_evs {
+            fmt.sbprintfln(&sb, "    %[0]s_interface.event_count = len(%[0]s_events)", iname_sc)
+            fmt.sbprintfln(&sb, "    %[0]s_interface.events = &%[0]s_events[0]", iname_sc)
+        }
+        fmt.sbprintln(&sb, "}")
+    }
+
+    iface_gen.var_str_init = strings.clone_from_bytes(sb.buf[:])
     strings.builder_reset(&sb)
 
     // Struct type definition
@@ -531,6 +595,8 @@ gen_interface :: proc(ifaces: []Interface, iface: ^Interface) -> (iface_gen: Int
     for enum_ in iface.enums {
         ename_ac, ename_ac_err := strings.to_ada_case(enum_.name)
         fmt.ensuref(ename_ac_err == nil, "could not convert enum name to ada case: %s", enum_.name)
+
+        fmt.sbprint(&sb, gen_description(enum_.description))
 
         if enum_.bitfield {
             fmt.sbprintfln(&sb, "%s_%s_Flag :: enum {{", iname_ac, ename_ac)
@@ -546,6 +612,7 @@ gen_interface :: proc(ifaces: []Interface, iface: ^Interface) -> (iface_gen: Int
                 ename_ac = strings.concatenate({"_", ename_ac})
             }
 
+            fmt.sbprint(&sb, gen_description(entry.description, entry.summary, 1))
             fmt.sbprintfln(&sb, "    %s = %d,", ename_ac, entry.value)
         }
         fmt.sbprintln(&sb, "}")
@@ -560,24 +627,30 @@ gen_interface :: proc(ifaces: []Interface, iface: ^Interface) -> (iface_gen: Int
 
     // Event listener struct
 
-    fmt.sbprintfln(&sb, "%s_Listener :: struct{{", iname_ac)
-    for ev in iface.events {
-        fmt.sbprintfln(&sb, "    %s: proc(", ev.name)
-        fmt.sbprintln(&sb, "        data: rawptr,")
-        fmt.sbprintfln(&sb, "        %s: ^%s,", iname_sc, iname_ac)
-        for arg in ev.args {
-            fmt.sbprintfln(&sb, "        %s: %s,", arg.name, arg_type_odin_types[arg.type])
+    if has_evs {
+        fmt.sbprintfln(&sb, "%s_Listener :: struct{{", iname_ac)
+        for ev in iface.events {
+            fmt.sbprint(&sb, gen_description(ev.description, level = 1))
+            fmt.sbprintfln(&sb, "    %s: proc(", ev.name)
+            fmt.sbprintln(&sb, "        data: rawptr,")
+            fmt.sbprintfln(&sb, "        %s: ^%s,", iname_sc, iname_ac)
+            for arg in ev.args {
+                fmt.sbprint(&sb, gen_description(arg.description, arg.summary, 2))
+                fmt.sbprintfln(&sb, "        %s: %s,", arg.name, arg_type_odin_types[arg.type])
+            }
+            fmt.sbprintln(&sb, "    ),")
+            fmt.sbprintln(&sb, "")
         }
-        fmt.sbprintln(&sb, "    ),")
-    }
-    fmt.sbprintln(&sb, "}")
+        fmt.sbprintln(&sb, "}")
 
-    iface_gen.listener = strings.clone_from_bytes(sb.buf[:])
-    strings.builder_reset(&sb)
+        iface_gen.listener = strings.clone_from_bytes(sb.buf[:])
+        strings.builder_reset(&sb)
+    }
 
     // Helper functions
 
-    #unroll for tmpl_fn in TMPL_FNS {
+    for tmpl_fn in TMPL_FNS {
+        if tmpl_fn == ADD_LISTENER_TMPL && !has_evs do continue
         fmt.sbprintfln(&sb, tmpl_fn, iname_sc, iname_ac)
     }
 
@@ -593,6 +666,7 @@ gen_interface :: proc(ifaces: []Interface, iface: ^Interface) -> (iface_gen: Int
         rname_ssc, rname_ssc_err := strings.to_screaming_snake_case(req.name)
         fmt.ensuref(rname_ssc_err == nil, "could not convert request name to screaming snake case: %s", req.name)
 
+        fmt.sbprint(&sb, gen_description(req.description))
         fmt.sbprintfln(&sb, "%s_%s :: #force_inline proc(", iname_sc, req.name)
         fmt.sbprintfln(&sb, "    %s: ^%s,", iname_sc, iname_ac)
 
@@ -612,6 +686,8 @@ gen_interface :: proc(ifaces: []Interface, iface: ^Interface) -> (iface_gen: Int
                 }
                 continue
             }
+
+            fmt.sbprint(&sb, gen_description(arg.description, arg.summary, 1))
 
             if t, ok := arg.interface.(string); ok {
                 ac, ac_err := strings.to_ada_case(strings.trim_prefix(t, "wl_"))
@@ -688,7 +764,7 @@ gen_interface :: proc(ifaces: []Interface, iface: ^Interface) -> (iface_gen: Int
         }
 
         if r_arg == nil {
-            fmt.sbprintln(&sb, "        1, //Unused")
+            fmt.sbprintln(&sb, "        1,")
         } else {
             if r_ifc_ok {
                 fmt.sbprintfln(&sb, "        proxy_get_version(cast(^Proxy)%s),", iname_sc)
@@ -786,8 +862,10 @@ gen_def :: proc(path: string) {
     fmt.fprintln(fd, "")
 
     for g_iface in g_ifaces {
+        fmt.fprintln(fd, g_iface.interfaces)
         fmt.fprintln(fd, g_iface.requests)
         fmt.fprintln(fd, g_iface.events)
+        fmt.fprintln(fd, g_iface.var_str_init)
         fmt.fprintln(fd, g_iface.var_str)
     }
 

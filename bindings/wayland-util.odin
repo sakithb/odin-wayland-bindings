@@ -102,7 +102,7 @@ Message :: struct {
 	signature: cstring,
 
 	/** Object argument interfaces */
-	types: ^^Interface,
+	types: [^]^Interface,
 }
 
 /**
@@ -162,13 +162,13 @@ Interface :: struct {
 	method_count: i32,
 
 	/** Method (request) signatures */
-	methods: ^Message,
+	methods: [^]Message,
 
 	/** Number of events */
 	event_count: i32,
 
 	/** Event signatures */
-	events: ^Message,
+	events: [^]Message,
 }
 
 /** \class wl_list
@@ -315,7 +315,7 @@ Argument :: struct #raw_union {
 *
 * \return 0 on success, or -1 on failure
 */
-Dispatcher_Func :: proc "c" (rawptr, rawptr, u32, ^Message, ^Argument) -> i32
+Dispatcher_Func :: proc "c" (rawptr, rawptr, u32, ^Message, [^]Argument) -> i32
 
 /**
 * Log function type alias
