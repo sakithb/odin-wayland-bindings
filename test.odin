@@ -13,9 +13,9 @@ shell_surface: ^wl.Shell_Surface
 global_registry_handler :: proc(
 	data: rawptr,
 	registry: ^wl.Registry,
-	id: uint,
+	id: u32,
 	interface: cstring,
-	version: uint,
+	version: u32,
 ) {
 	fmt.printf("Got a registry event for  %s with id %d \r\n", interface, id)
 	if (interface == "wl_compositor") {
@@ -29,7 +29,7 @@ global_registry_handler :: proc(
 	}
 }
 
-global_registry_remover :: proc(data: rawptr, registry: ^wl.Registry, id: uint) {
+global_registry_remover :: proc(data: rawptr, registry: ^wl.Registry, id: u32) {
 	fmt.printf("Got a registry losing event for %d", id)
 }
 

@@ -6,6 +6,8 @@ import "core:fmt"
 import "core:strconv"
 import "core:strings"
 
+import "base:runtime"
+
 Arg_Type :: enum {
     Int,
     Uint,
@@ -140,19 +142,13 @@ parse_entry :: proc(doc: ^xml.Document, elem: ^xml.Element) -> (entry: Entry)  {
         case "name":
             name = attr.val
         case "value":
-            v, ok := strconv.parse_int(attr.val)
-            fmt.ensuref(ok, "could not parse entry value")
-            value = v
+            value = assert_ok(strconv.parse_int(attr.val))
         case "summary":
             entry.summary = attr.val
         case "avail_from":
-            v, ok := strconv.parse_uint(attr.val)
-            fmt.ensuref(ok, "could not parse entry avail_from")
-            entry.avail_from = v
+            entry.avail_from = assert_ok(strconv.parse_uint(attr.val))
         case "avail_to":
-            v, ok := strconv.parse_uint(attr.val)
-            fmt.ensuref(ok, "could not parse entry avail_to")
-            entry.avail_to = v
+            entry.avail_to = assert_ok(strconv.parse_uint(attr.val))
         }
     }
 
@@ -191,9 +187,7 @@ parse_enum :: proc(doc: ^xml.Document, elem: ^xml.Element) -> (en: Enum)  {
         case "name":
             name = attr.val
         case "avail_from":
-            v, ok := strconv.parse_uint(attr.val)
-            fmt.ensuref(ok, "could not parse enum avail_from")
-            en.avail_from = v
+            en.avail_from = assert_ok(strconv.parse_uint(attr.val))
         case "bitfield":
             en.bitfield = attr.val == "true"
         }
@@ -240,13 +234,9 @@ parse_event :: proc(doc: ^xml.Document, elem: ^xml.Element) -> (ev: Event)  {
         case "type":
             ev.type = attr.val
         case "avail_from":
-            v, ok := strconv.parse_uint(attr.val)
-            fmt.ensuref(ok, "could not parse event avail_from")
-            ev.avail_from = v
+            ev.avail_from = assert_ok(strconv.parse_uint(attr.val))
         case "avail_to":
-            v, ok := strconv.parse_uint(attr.val)
-            fmt.ensuref(ok, "could not parse event avail_to")
-            ev.avail_to = v
+            ev.avail_to = assert_ok(strconv.parse_uint(attr.val))
         }
     }
 
@@ -291,13 +281,9 @@ parse_request :: proc(doc: ^xml.Document, elem: ^xml.Element) -> (req: Request) 
         case "type":
             req.type = attr.val
         case "avail_from":
-            v, ok := strconv.parse_uint(attr.val)
-            fmt.ensuref(ok, "could not parse request avail_from")
-            req.avail_from = v
+            req.avail_from = assert_ok(strconv.parse_uint(attr.val))
         case "avail_to":
-            v, ok := strconv.parse_uint(attr.val)
-            fmt.ensuref(ok, "could not parse request avail_to")
-            req.avail_to = v
+            req.avail_to = assert_ok(strconv.parse_uint(attr.val))
         }
     }
 
@@ -341,9 +327,7 @@ parse_interface :: proc(doc: ^xml.Document, elem: ^xml.Element) -> (iface: Inter
         case "name":
             name = attr.val
         case "version":
-            v, ok := strconv.parse_uint(attr.val)
-            fmt.ensuref(ok, "could not parse interface version")
-            version = v
+            version = assert_ok(strconv.parse_uint(attr.val))
         }
     }
 
@@ -420,7 +404,69 @@ Interface_Gen :: struct {
     request_fns: [dynamic]string,
 }
 
-gen_description :: proc(desc: Maybe(Description), summary: Maybe(string) = nil, level: int = 0) -> string {
+get_args_sig :: proc (args: []Arg) -> string {
+    sb := strings.builder_make()
+
+    for arg in args {
+        if _, ok := arg.interface.?; arg.type == .New_Id && !ok {
+            strings.write_byte(&sb, 's')
+            strings.write_byte(&sb, 'u')
+        }
+
+        if arg.nullable {
+            strings.write_byte(&sb, '?')
+        }
+
+        strings.write_byte(&sb, arg_type_syms[arg.type])
+    }
+
+    return strings.to_string(sb)
+}
+
+get_arg_type :: proc(arg: Arg, iface: ^Interface, ifaces: []Interface) -> string {
+    if t, ok := arg.interface.?; ok {
+        return strings.concatenate({
+            "^",
+            strings.to_ada_case(strings.trim_prefix(t, "wl_")) //could error
+        }) // could error
+    } else if t, ok := arg.enum_.?; ok {
+        if_t, _, enum_t := strings.partition(t, ".")
+
+        if if_t == t {
+            for e in iface.enums {
+                if e.name == t {
+                    if e.bitfield {
+                        t = strings.concatenate({iface.name, "_", t, "_flags"}) //could error
+                    } else {
+                        t = strings.concatenate({iface.name, "_", t}) //could error
+                    }
+
+                    break
+                }
+            }
+        } else {
+            t, _ = strings.replace(t, ".", "_", 1)
+
+            for i in ifaces {
+                if i.name == if_t {
+                    for e in i.enums {
+                        if e.name == enum_t && e.bitfield {
+                            t = strings.concatenate({t, "_flags"}) //could error
+
+                            break
+                        }
+                    }
+                }
+            }
+        }
+
+        return strings.to_ada_case(strings.trim_prefix(t, "wl_")) //could error
+    } else {
+        return arg_type_odin_types[arg.type]
+    }
+}
+
+get_description :: proc(desc: Maybe(Description), summary: Maybe(string) = nil, level: int = 0) -> string {
     desc, desc_ok := desc.?;
     summary, summary_ok := summary.?;
     if !desc_ok && !summary_ok do return ""
@@ -436,8 +482,7 @@ gen_description :: proc(desc: Maybe(Description), summary: Maybe(string) = nil, 
         
     sb := strings.builder_make()
     
-    indent, indent_err := strings.repeat(" ", level * 4)
-    fmt.ensuref(indent_err == nil, "could not repeat indent")
+    indent := strings.repeat(" ", level * 4) //could error
 
     fmt.sbprintfln(&sb, "%s/*", indent)
 
@@ -450,8 +495,7 @@ gen_description :: proc(desc: Maybe(Description), summary: Maybe(string) = nil, 
     }
 
     if has_v {
-        lines, err := strings.split_lines(v)
-        fmt.ensuref(err == nil, "could not split description into lines")
+        lines := strings.split_lines(v) //could error
         for line in lines {
             fmt.sbprintfln(&sb, "%s * %s", indent, strings.trim_space(line))
         }
@@ -467,10 +511,8 @@ gen_interface :: proc(ifaces: []Interface, iface: ^Interface) -> (iface_gen: Int
     defer strings.builder_destroy(&sb)
 
     iname_sc := strings.trim_prefix(iface.name, "wl_")
-    iname_ac, iname_ac_err := strings.to_ada_case(iname_sc)
-    fmt.ensuref(iname_ac_err == nil, "could not convert interface name to ada case: %s", iname_sc)
-    iname_ssc, iname_ssc_err := strings.to_screaming_snake_case(iname_sc)
-    fmt.ensuref(iname_ssc_err == nil, "could not convert interface name to screaming snake case: %s", iname_sc)
+    iname_ac := strings.to_ada_case(iname_sc) //could error
+    iname_ssc := strings.to_screaming_snake_case(iname_sc) //could error
 
     has_reqs := len(iface.requests) > 0
     has_evs := len(iface.events) > 0
@@ -481,18 +523,18 @@ gen_interface :: proc(ifaces: []Interface, iface: ^Interface) -> (iface_gen: Int
         for req in iface.requests {
             for arg in req.args {
                 if arg_iface, ok := arg.interface.(string); ok {
-                    fmt.sbprintfln(&sb, " &%s_interface,", strings.trim_prefix(arg_iface, "wl_"))
+                    fmt.sbprintfln(&sb, "    &%s_interface,", strings.trim_prefix(arg_iface, "wl_"))
                 } else {
-                    fmt.sbprintln(&sb, " nil,")
+                    fmt.sbprintln(&sb, "    nil,")
                 }
             }
         }
         for ev in iface.events {
             for arg in ev.args {
                 if arg_iface, ok := arg.interface.(string); ok {
-                    fmt.sbprintfln(&sb, " &%s_interface,", strings.trim_prefix(arg_iface, "wl_"))
+                    fmt.sbprintfln(&sb, "    &%s_interface,", strings.trim_prefix(arg_iface, "wl_"))
                 } else {
-                    fmt.sbprintln(&sb, " nil,")
+                    fmt.sbprintln(&sb, "    nil,")
                 }
             }
         }
@@ -509,15 +551,11 @@ gen_interface :: proc(ifaces: []Interface, iface: ^Interface) -> (iface_gen: Int
     if has_reqs {
         fmt.sbprintfln(&sb, "%s_requests := [?]Message{{", iname_sc)
         for req in iface.requests {
-            fmt.sbprintf(&sb, "    {{ %q, \"", req.name)
-            for arg in req.args {
-                if arg.nullable do fmt.sbprint(&sb, "?")
-                strings.write_byte(&sb, arg_type_syms[arg.type])
-            }
+            fmt.sbprintf(&sb, "    {{ %q, %q, ", req.name, get_args_sig(req.args[:]))
             if len(req.args) > 0 {
-                fmt.sbprintfln(&sb, "\", &%s_interfaces[%d] }},", iname_sc, interface_offset)
+                fmt.sbprintfln(&sb, "&%s_interfaces[%d] }},", iname_sc, interface_offset)
             } else {
-                fmt.sbprintln(&sb, "\", nil },")
+                fmt.sbprintln(&sb, "nil },")
             }
             interface_offset += len(req.args)
         }
@@ -532,15 +570,11 @@ gen_interface :: proc(ifaces: []Interface, iface: ^Interface) -> (iface_gen: Int
     if has_evs {
         fmt.sbprintfln(&sb, "%s_events := [?]Message{{", iname_sc)
         for ev in iface.events {
-            fmt.sbprintf(&sb, "    {{ %q, \"", ev.name)
-            for arg in ev.args {
-                if arg.nullable do fmt.sbprint(&sb, "?")
-                strings.write_byte(&sb, arg_type_syms[arg.type])
-            }
+            fmt.sbprintf(&sb, "    {{ %q, %q, ", ev.name, get_args_sig(ev.args[:]))
             if len(ev.args) > 0 {
-                fmt.sbprintfln(&sb, "\", &%s_interfaces[%d] }},", iname_sc, interface_offset)
+                fmt.sbprintfln(&sb, "&%s_interfaces[%d] }},", iname_sc, interface_offset)
             } else {
-                fmt.sbprintln(&sb, "\", nil },")
+                fmt.sbprintln(&sb, "nil },")
             }
             interface_offset += len(ev.args)
         }
@@ -552,7 +586,7 @@ gen_interface :: proc(ifaces: []Interface, iface: ^Interface) -> (iface_gen: Int
 
     // Interface definition
 
-    fmt.sbprint(&sb, gen_description(iface.description))
+    fmt.sbprint(&sb, get_description(iface.description))
     fmt.sbprintfln(&sb, "%s_interface := Interface{{", iname_sc)
     fmt.sbprintfln(&sb, "    %q,", iface.name)
     fmt.sbprintfln(&sb, "    %d,", iface.version)
@@ -593,10 +627,9 @@ gen_interface :: proc(ifaces: []Interface, iface: ^Interface) -> (iface_gen: Int
     iface_gen.enums = make([dynamic]string)
 
     for enum_ in iface.enums {
-        ename_ac, ename_ac_err := strings.to_ada_case(enum_.name)
-        fmt.ensuref(ename_ac_err == nil, "could not convert enum name to ada case: %s", enum_.name)
+        ename_ac := strings.to_ada_case(enum_.name) //could error
 
-        fmt.sbprint(&sb, gen_description(enum_.description))
+        fmt.sbprint(&sb, get_description(enum_.description))
 
         if enum_.bitfield {
             fmt.sbprintfln(&sb, "%s_%s_Flag :: enum {{", iname_ac, ename_ac)
@@ -605,14 +638,13 @@ gen_interface :: proc(ifaces: []Interface, iface: ^Interface) -> (iface_gen: Int
         }
 
         for entry in enum_.entries {
-            ename_ac, ename_ac_err := strings.to_ada_case(entry.name)
-            fmt.ensuref(ename_ac_err == nil, "could not convert enum entry name to ada case: %s", entry.name)
+            ename_ac := strings.to_ada_case(entry.name) //could error
 
             if (byte(entry.name[0]) < 65) {
                 ename_ac = strings.concatenate({"_", ename_ac})
             }
 
-            fmt.sbprint(&sb, gen_description(entry.description, entry.summary, 1))
+            fmt.sbprint(&sb, get_description(entry.description, entry.summary, 1))
             fmt.sbprintfln(&sb, "    %s = %d,", ename_ac, entry.value)
         }
         fmt.sbprintln(&sb, "}")
@@ -630,13 +662,13 @@ gen_interface :: proc(ifaces: []Interface, iface: ^Interface) -> (iface_gen: Int
     if has_evs {
         fmt.sbprintfln(&sb, "%s_Listener :: struct{{", iname_ac)
         for ev in iface.events {
-            fmt.sbprint(&sb, gen_description(ev.description, level = 1))
+            fmt.sbprint(&sb, get_description(ev.description, level = 1))
             fmt.sbprintfln(&sb, "    %s: proc(", ev.name)
             fmt.sbprintln(&sb, "        data: rawptr,")
             fmt.sbprintfln(&sb, "        %s: ^%s,", iname_sc, iname_ac)
             for arg in ev.args {
-                fmt.sbprint(&sb, gen_description(arg.description, arg.summary, 2))
-                fmt.sbprintfln(&sb, "        %s: %s,", arg.name, arg_type_odin_types[arg.type])
+                fmt.sbprint(&sb, get_description(arg.description, arg.summary, 2))
+                fmt.sbprintfln(&sb, "        %s: %s,", arg.name, get_arg_type(arg, iface, ifaces))
             }
             fmt.sbprintln(&sb, "    ),")
             fmt.sbprintln(&sb, "")
@@ -663,88 +695,37 @@ gen_interface :: proc(ifaces: []Interface, iface: ^Interface) -> (iface_gen: Int
     iface_gen.request_fns = make([dynamic]string)
 
     for req, i in iface.requests {
-        rname_ssc, rname_ssc_err := strings.to_screaming_snake_case(req.name)
-        fmt.ensuref(rname_ssc_err == nil, "could not convert request name to screaming snake case: %s", req.name)
+        rname_ssc := strings.to_screaming_snake_case(req.name) //could error
 
-        fmt.sbprint(&sb, gen_description(req.description))
+        fmt.sbprint(&sb, get_description(req.description))
         fmt.sbprintfln(&sb, "%s_%s :: #force_inline proc(", iname_sc, req.name)
         fmt.sbprintfln(&sb, "    %s: ^%s,", iname_sc, iname_ac)
 
-        r_arg: ^Arg
-        r_ifc: string
-        r_ifc_ac: string
-        r_ifc_ok: bool
+        ret_arg: ^Arg
+        ret_ifc: string
+        ret_ifc_ac: string
+        ret_ifc_exists: bool
         for &arg in req.args {
             if arg.type == .New_Id {
-                r_arg = &arg
-                r_ifc, r_ifc_ok = r_arg.interface.(string)
-                if r_ifc_ok {
-                    r_ifc = strings.trim_prefix(r_ifc, "wl_")
-                    ac, ac_err := strings.to_ada_case(r_ifc)
-                    fmt.ensuref(ac_err == nil, "could not convert interface %s to ada case", r_ifc)
-                    r_ifc_ac = ac
+                ret_arg = &arg
+                ret_ifc, ret_ifc_exists = ret_arg.interface.(string)
+                if ret_ifc_exists {
+                    ret_ifc_ac = strings.to_ada_case(strings.trim_prefix(ret_ifc, "wl_")) //could error
                 }
                 continue
             }
 
-            fmt.sbprint(&sb, gen_description(arg.description, arg.summary, 1))
-
-            if t, ok := arg.interface.(string); ok {
-                ac, ac_err := strings.to_ada_case(strings.trim_prefix(t, "wl_"))
-                fmt.ensuref(ac_err == nil, "could not convert interface %s to ada case", t)
-                fmt.sbprintfln(&sb, "    %s: ^%s,", arg.name, ac)
-            } else if t, ok := arg.enum_.(string); ok {
-                t_iface, _, t_enum := strings.partition(t, ".")
-
-                if t_iface == t {
-                    for enum_ in iface.enums {
-                        if enum_.name == t {
-                            if enum_.bitfield {
-                                v, err := strings.concatenate({iname_ac, "_", t, "_Flags"})
-                                fmt.ensuref(err == nil, "could not concat bit_set %s_Flags", t)
-                                t = v
-                            } else {
-                                v, err := strings.concatenate({iname_ac, "_", t})
-                                fmt.ensuref(err == nil, "could not concat enum %s", t)
-                                t = v
-                            }
-
-                            break
-                        }
-                    }
-                } else {
-                    t = strings.trim_prefix(t, "wl_")
-                    t, _ = strings.replace(t, ".", "_", 1)
-
-                    for _iface in ifaces {
-                        if _iface.name == t_iface {
-                            for _enum in _iface.enums {
-                                if _enum.name == t_enum && _enum.bitfield {
-                                    v, err := strings.concatenate({t, "_Flags"})
-                                    fmt.ensuref(err == nil, "could not concat bit_set %s_Flags", t)
-                                    t = v
-                                    break
-                                }
-                            }
-                        }
-                    }
-                }
-
-                ac, ac_err := strings.to_ada_case(t)
-                fmt.ensuref(ac_err == nil, "could not convert enum %s to ada case", t)
-                fmt.sbprintfln(&sb, "    %s: %s,", arg.name, ac)
-            } else {
-                fmt.sbprintfln(&sb, "    %s: %s,", arg.name, arg_type_odin_types[arg.type])
-            }
+            fmt.sbprint(&sb, get_description(arg.description, arg.summary, 1))
+            fmt.sbprintfln(&sb, "    %s: %s,", arg.name, get_arg_type(arg, iface, ifaces))
         }
 
-        if r_arg == nil {
+        if ret_arg == nil {
             fmt.sbprintln(&sb, ") {")
             fmt.sbprintln(&sb, "    proxy_marshal_flags(")
         } else {
-            if r_ifc_ok {
-                fmt.sbprintfln(&sb, ") -> ^%s {{", r_ifc_ac)
-                fmt.sbprintfln(&sb, "    return cast(^%s)proxy_marshal_flags(", r_ifc_ac)
+            if ret_ifc_exists {
+                fmt.sbprintfln(&sb, ") -> ^%s {{", ret_ifc_ac)
+                fmt.sbprintfln(&sb, "    return cast(^%s)proxy_marshal_flags(", ret_ifc_ac)
             } else {
                 fmt.sbprintln(&sb, "    interface: ^Interface,")
                 fmt.sbprintln(&sb, "    version: u32,")
@@ -757,16 +738,20 @@ gen_interface :: proc(ifaces: []Interface, iface: ^Interface) -> (iface_gen: Int
         fmt.sbprintfln(&sb, "        cast(^Proxy)%s,", iname_sc)
         fmt.sbprintfln(&sb, "        %s_%s,", iname_ssc, rname_ssc)
 
-        if r_arg == nil {
+        if ret_arg == nil {
             fmt.sbprintln(&sb, "        nil,")
         } else {
-            fmt.sbprintfln(&sb, "        &%s_interface,", iname_sc)
+            if ret_ifc_exists {
+                fmt.sbprintfln(&sb, "        &%s_interface,", ret_ifc)
+            } else {
+                fmt.sbprintln(&sb, "        interface,")
+            }
         }
 
-        if r_arg == nil {
+        if ret_arg == nil {
             fmt.sbprintln(&sb, "        1,")
         } else {
-            if r_ifc_ok {
+            if ret_ifc_exists {
                 fmt.sbprintfln(&sb, "        proxy_get_version(cast(^Proxy)%s),", iname_sc)
             } else {
                 fmt.sbprintln(&sb, "        version,")
@@ -777,15 +762,14 @@ gen_interface :: proc(ifaces: []Interface, iface: ^Interface) -> (iface_gen: Int
 
         for &arg in req.args {
             if arg.type == .New_Id {
+                if !ret_ifc_exists {
+                    fmt.sbprintln(&sb, "        interface.name,")
+                    fmt.sbprintln(&sb, "        version,")
+                }
                 fmt.sbprintln(&sb, "        nil,")
             } else {
                 fmt.sbprintfln(&sb, "        %s,", arg.name)
             }
-        }
-
-        if r_arg != nil && !r_ifc_ok {
-            fmt.sbprintln(&sb, "    interface.name,")
-            fmt.sbprintln(&sb, "    version,")
         }
 
         fmt.sbprintln(&sb, "    )")
@@ -803,8 +787,7 @@ gen_def :: proc(path: string) {
     context.allocator = context.temp_allocator
     defer free_all(context.allocator)
 
-    doc, doc_err := xml.load_from_file(path)
-    fmt.ensuref(doc_err == nil, "could not load def from %s", path)
+    doc := assert_err(xml.load_from_file(path))
 
     protocol: ^xml.Element
     for &elem in doc.elements {
@@ -813,7 +796,7 @@ gen_def :: proc(path: string) {
             break
         }
     }
-    fmt.ensuref(protocol != nil, "could not find protocol tag: %s", path)
+    assert(protocol != nil)
 
     ifaces := make([dynamic]Interface)
 
@@ -839,18 +822,15 @@ gen_def :: proc(path: string) {
             break
         }
     }
-    fmt.ensuref(pname != "", "could not find protocol name %s", path)
+    assert(pname != "")
 
-    fd_path, fd_path_err := strings.concatenate({"bindings/", pname, ".odin"})
-    fmt.ensuref(fd_path_err == nil, "could not build write path %s", pname)
-
-    fd, fd_err := os.open(
+    fd_path := strings.concatenate({"bindings/", pname, ".odin"}) //could error
+    fd := assert_err(os.open(
         fd_path,
         os.O_WRONLY|os.O_CREATE|os.O_TRUNC,
         os.S_IRUSR|os.S_IWUSR|os.S_IRGRP|os.S_IROTH
-    )
-    fmt.ensuref(fd_err == nil, "could not open %s", fd_path)
-    defer fmt.ensuref(os.close(fd) == nil, "could not close %s", fd_path)
+    ))
+    defer assert(os.close(fd) == nil)
 
     fmt.fprintln(fd, "package wayland_client")
     fmt.fprintln(fd, "")
@@ -865,8 +845,8 @@ gen_def :: proc(path: string) {
         fmt.fprintln(fd, g_iface.interfaces)
         fmt.fprintln(fd, g_iface.requests)
         fmt.fprintln(fd, g_iface.events)
-        fmt.fprintln(fd, g_iface.var_str_init)
         fmt.fprintln(fd, g_iface.var_str)
+        fmt.fprintln(fd, g_iface.var_str_init)
     }
 
     fmt.fprintln(fd, "")
@@ -884,13 +864,21 @@ gen_def :: proc(path: string) {
 }
 
 main :: proc() {
-    fd, fd_err := os.open("defs")
-    fmt.ensuref(fd_err == nil, "could not open defs directory")
-
-    defs, defs_err := os.read_dir(fd, -1)
-    fmt.ensuref(defs_err == nil, "could not read defs directory")
+    fd := assert_err(os.open("defs"))
+    defer assert(os.close(fd) == nil)
+    defs := assert_err(os.read_dir(fd, -1))
 
     for def in defs {
         gen_def(def.fullpath)
     }
+}
+
+assert_err :: proc(v: $T, err: $E, loc := #caller_location) -> T {
+    assert(err == nil)
+    return v
+}
+
+assert_ok :: proc(v: $T, ok: bool = false, loc := #caller_location) -> T {
+    assert(ok, loc = loc)
+    return v
 }

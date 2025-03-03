@@ -25,12 +25,12 @@ Subsurface :: struct{}
 Fixes :: struct{}
 
 display_interfaces := [?]^Interface{
- &callback_interface,
- &registry_interface,
- nil,
- nil,
- nil,
- nil,
+    &callback_interface,
+    &registry_interface,
+    nil,
+    nil,
+    nil,
+    nil,
 }
 
 display_requests := [?]Message{
@@ -41,14 +41,6 @@ display_requests := [?]Message{
 display_events := [?]Message{
     { "error", "ous", &display_interfaces[2] },
     { "delete_id", "u", &display_interfaces[5] },
-}
-
-@(init)
-display_interface_init :: proc() {
-    display_interface.method_count = len(display_requests)
-    display_interface.methods = &display_requests[0]
-    display_interface.event_count = len(display_events)
-    display_interface.events = &display_events[0]
 }
 
 /*
@@ -65,30 +57,30 @@ display_interface := Interface{
     nil,
 }
 
+@(init)
+display_interface_init :: proc() {
+    display_interface.method_count = len(display_requests)
+    display_interface.methods = &display_requests[0]
+    display_interface.event_count = len(display_events)
+    display_interface.events = &display_events[0]
+}
+
 registry_interfaces := [?]^Interface{
- nil,
- nil,
- nil,
- nil,
- nil,
- nil,
+    nil,
+    nil,
+    nil,
+    nil,
+    nil,
+    nil,
 }
 
 registry_requests := [?]Message{
-    { "bind", "un", &registry_interfaces[0] },
+    { "bind", "usun", &registry_interfaces[0] },
 }
 
 registry_events := [?]Message{
     { "global", "usu", &registry_interfaces[2] },
     { "global_remove", "u", &registry_interfaces[5] },
-}
-
-@(init)
-registry_interface_init :: proc() {
-    registry_interface.method_count = len(registry_requests)
-    registry_interface.methods = &registry_requests[0]
-    registry_interface.event_count = len(registry_events)
-    registry_interface.events = &registry_events[0]
 }
 
 /*
@@ -123,19 +115,21 @@ registry_interface := Interface{
     nil,
 }
 
+@(init)
+registry_interface_init :: proc() {
+    registry_interface.method_count = len(registry_requests)
+    registry_interface.methods = &registry_requests[0]
+    registry_interface.event_count = len(registry_events)
+    registry_interface.events = &registry_events[0]
+}
+
 callback_interfaces := [?]^Interface{
- nil,
+    nil,
 }
 
 
 callback_events := [?]Message{
     { "done", "u", &callback_interfaces[0] },
-}
-
-@(init)
-callback_interface_init :: proc() {
-    callback_interface.event_count = len(callback_events)
-    callback_interface.events = &callback_events[0]
 }
 
 /*
@@ -155,9 +149,15 @@ callback_interface := Interface{
     nil,
 }
 
+@(init)
+callback_interface_init :: proc() {
+    callback_interface.event_count = len(callback_events)
+    callback_interface.events = &callback_events[0]
+}
+
 compositor_interfaces := [?]^Interface{
- &surface_interface,
- &region_interface,
+    &surface_interface,
+    &region_interface,
 }
 
 compositor_requests := [?]Message{
@@ -165,12 +165,6 @@ compositor_requests := [?]Message{
     { "create_region", "n", &compositor_interfaces[1] },
 }
 
-
-@(init)
-compositor_interface_init :: proc() {
-    compositor_interface.method_count = len(compositor_requests)
-    compositor_interface.methods = &compositor_requests[0]
-}
 
 /*
  * the compositor singleton
@@ -187,14 +181,20 @@ compositor_interface := Interface{
     nil,
 }
 
+@(init)
+compositor_interface_init :: proc() {
+    compositor_interface.method_count = len(compositor_requests)
+    compositor_interface.methods = &compositor_requests[0]
+}
+
 shm_pool_interfaces := [?]^Interface{
- &buffer_interface,
- nil,
- nil,
- nil,
- nil,
- nil,
- nil,
+    &buffer_interface,
+    nil,
+    nil,
+    nil,
+    nil,
+    nil,
+    nil,
 }
 
 shm_pool_requests := [?]Message{
@@ -203,12 +203,6 @@ shm_pool_requests := [?]Message{
     { "resize", "i", &shm_pool_interfaces[6] },
 }
 
-
-@(init)
-shm_pool_interface_init :: proc() {
-    shm_pool_interface.method_count = len(shm_pool_requests)
-    shm_pool_interface.methods = &shm_pool_requests[0]
-}
 
 /*
  * a shared memory pool
@@ -229,11 +223,17 @@ shm_pool_interface := Interface{
     nil,
 }
 
+@(init)
+shm_pool_interface_init :: proc() {
+    shm_pool_interface.method_count = len(shm_pool_requests)
+    shm_pool_interface.methods = &shm_pool_requests[0]
+}
+
 shm_interfaces := [?]^Interface{
- &shm_pool_interface,
- nil,
- nil,
- nil,
+    &shm_pool_interface,
+    nil,
+    nil,
+    nil,
 }
 
 shm_requests := [?]Message{
@@ -243,14 +243,6 @@ shm_requests := [?]Message{
 
 shm_events := [?]Message{
     { "format", "u", &shm_interfaces[3] },
-}
-
-@(init)
-shm_interface_init :: proc() {
-    shm_interface.method_count = len(shm_requests)
-    shm_interface.methods = &shm_requests[0]
-    shm_interface.event_count = len(shm_events)
-    shm_interface.events = &shm_events[0]
 }
 
 /*
@@ -274,6 +266,14 @@ shm_interface := Interface{
     nil,
 }
 
+@(init)
+shm_interface_init :: proc() {
+    shm_interface.method_count = len(shm_requests)
+    shm_interface.methods = &shm_requests[0]
+    shm_interface.event_count = len(shm_events)
+    shm_interface.events = &shm_events[0]
+}
+
 buffer_interfaces := [?]^Interface{
 }
 
@@ -283,14 +283,6 @@ buffer_requests := [?]Message{
 
 buffer_events := [?]Message{
     { "release", "", nil },
-}
-
-@(init)
-buffer_interface_init :: proc() {
-    buffer_interface.method_count = len(buffer_requests)
-    buffer_interface.methods = &buffer_requests[0]
-    buffer_interface.event_count = len(buffer_events)
-    buffer_interface.events = &buffer_events[0]
 }
 
 /*
@@ -320,16 +312,24 @@ buffer_interface := Interface{
     nil,
 }
 
+@(init)
+buffer_interface_init :: proc() {
+    buffer_interface.method_count = len(buffer_requests)
+    buffer_interface.methods = &buffer_requests[0]
+    buffer_interface.event_count = len(buffer_events)
+    buffer_interface.events = &buffer_events[0]
+}
+
 data_offer_interfaces := [?]^Interface{
- nil,
- nil,
- nil,
- nil,
- nil,
- nil,
- nil,
- nil,
- nil,
+    nil,
+    nil,
+    nil,
+    nil,
+    nil,
+    nil,
+    nil,
+    nil,
+    nil,
 }
 
 data_offer_requests := [?]Message{
@@ -344,14 +344,6 @@ data_offer_events := [?]Message{
     { "offer", "s", &data_offer_interfaces[6] },
     { "source_actions", "u", &data_offer_interfaces[7] },
     { "action", "u", &data_offer_interfaces[8] },
-}
-
-@(init)
-data_offer_interface_init :: proc() {
-    data_offer_interface.method_count = len(data_offer_requests)
-    data_offer_interface.methods = &data_offer_requests[0]
-    data_offer_interface.event_count = len(data_offer_events)
-    data_offer_interface.events = &data_offer_events[0]
 }
 
 /*
@@ -372,13 +364,21 @@ data_offer_interface := Interface{
     nil,
 }
 
+@(init)
+data_offer_interface_init :: proc() {
+    data_offer_interface.method_count = len(data_offer_requests)
+    data_offer_interface.methods = &data_offer_requests[0]
+    data_offer_interface.event_count = len(data_offer_events)
+    data_offer_interface.events = &data_offer_events[0]
+}
+
 data_source_interfaces := [?]^Interface{
- nil,
- nil,
- nil,
- nil,
- nil,
- nil,
+    nil,
+    nil,
+    nil,
+    nil,
+    nil,
+    nil,
 }
 
 data_source_requests := [?]Message{
@@ -394,14 +394,6 @@ data_source_events := [?]Message{
     { "dnd_drop_performed", "", nil },
     { "dnd_finished", "", nil },
     { "action", "u", &data_source_interfaces[5] },
-}
-
-@(init)
-data_source_interface_init :: proc() {
-    data_source_interface.method_count = len(data_source_requests)
-    data_source_interface.methods = &data_source_requests[0]
-    data_source_interface.event_count = len(data_source_events)
-    data_source_interface.events = &data_source_events[0]
 }
 
 /*
@@ -420,23 +412,31 @@ data_source_interface := Interface{
     nil,
 }
 
+@(init)
+data_source_interface_init :: proc() {
+    data_source_interface.method_count = len(data_source_requests)
+    data_source_interface.methods = &data_source_requests[0]
+    data_source_interface.event_count = len(data_source_events)
+    data_source_interface.events = &data_source_events[0]
+}
+
 data_device_interfaces := [?]^Interface{
- &data_source_interface,
- &surface_interface,
- &surface_interface,
- nil,
- &data_source_interface,
- nil,
- &data_offer_interface,
- nil,
- &surface_interface,
- nil,
- nil,
- &data_offer_interface,
- nil,
- nil,
- nil,
- &data_offer_interface,
+    &data_source_interface,
+    &surface_interface,
+    &surface_interface,
+    nil,
+    &data_source_interface,
+    nil,
+    &data_offer_interface,
+    nil,
+    &surface_interface,
+    nil,
+    nil,
+    &data_offer_interface,
+    nil,
+    nil,
+    nil,
+    &data_offer_interface,
 }
 
 data_device_requests := [?]Message{
@@ -452,14 +452,6 @@ data_device_events := [?]Message{
     { "motion", "uff", &data_device_interfaces[12] },
     { "drop", "", nil },
     { "selection", "?o", &data_device_interfaces[15] },
-}
-
-@(init)
-data_device_interface_init :: proc() {
-    data_device_interface.method_count = len(data_device_requests)
-    data_device_interface.methods = &data_device_requests[0]
-    data_device_interface.event_count = len(data_device_events)
-    data_device_interface.events = &data_device_events[0]
 }
 
 /*
@@ -479,10 +471,18 @@ data_device_interface := Interface{
     nil,
 }
 
+@(init)
+data_device_interface_init :: proc() {
+    data_device_interface.method_count = len(data_device_requests)
+    data_device_interface.methods = &data_device_requests[0]
+    data_device_interface.event_count = len(data_device_events)
+    data_device_interface.events = &data_device_events[0]
+}
+
 data_device_manager_interfaces := [?]^Interface{
- &data_source_interface,
- &data_device_interface,
- &seat_interface,
+    &data_source_interface,
+    &data_device_interface,
+    &seat_interface,
 }
 
 data_device_manager_requests := [?]Message{
@@ -490,12 +490,6 @@ data_device_manager_requests := [?]Message{
     { "get_data_device", "no", &data_device_manager_interfaces[1] },
 }
 
-
-@(init)
-data_device_manager_interface_init :: proc() {
-    data_device_manager_interface.method_count = len(data_device_manager_requests)
-    data_device_manager_interface.methods = &data_device_manager_requests[0]
-}
 
 /*
  * data transfer interface
@@ -519,21 +513,21 @@ data_device_manager_interface := Interface{
     nil,
 }
 
+@(init)
+data_device_manager_interface_init :: proc() {
+    data_device_manager_interface.method_count = len(data_device_manager_requests)
+    data_device_manager_interface.methods = &data_device_manager_requests[0]
+}
+
 shell_interfaces := [?]^Interface{
- &shell_surface_interface,
- &surface_interface,
+    &shell_surface_interface,
+    &surface_interface,
 }
 
 shell_requests := [?]Message{
     { "get_shell_surface", "no", &shell_interfaces[0] },
 }
 
-
-@(init)
-shell_interface_init :: proc() {
-    shell_interface.method_count = len(shell_requests)
-    shell_interface.methods = &shell_requests[0]
-}
 
 /*
  * create desktop-style surfaces
@@ -556,33 +550,39 @@ shell_interface := Interface{
     nil,
 }
 
+@(init)
+shell_interface_init :: proc() {
+    shell_interface.method_count = len(shell_requests)
+    shell_interface.methods = &shell_requests[0]
+}
+
 shell_surface_interfaces := [?]^Interface{
- nil,
- &seat_interface,
- nil,
- &seat_interface,
- nil,
- nil,
- &surface_interface,
- nil,
- nil,
- nil,
- nil,
- nil,
- &output_interface,
- &seat_interface,
- nil,
- &surface_interface,
- nil,
- nil,
- nil,
- &output_interface,
- nil,
- nil,
- nil,
- nil,
- nil,
- nil,
+    nil,
+    &seat_interface,
+    nil,
+    &seat_interface,
+    nil,
+    nil,
+    &surface_interface,
+    nil,
+    nil,
+    nil,
+    nil,
+    nil,
+    &output_interface,
+    &seat_interface,
+    nil,
+    &surface_interface,
+    nil,
+    nil,
+    nil,
+    &output_interface,
+    nil,
+    nil,
+    nil,
+    nil,
+    nil,
+    nil,
 }
 
 shell_surface_requests := [?]Message{
@@ -602,14 +602,6 @@ shell_surface_events := [?]Message{
     { "ping", "u", &shell_surface_interfaces[22] },
     { "configure", "uii", &shell_surface_interfaces[23] },
     { "popup_done", "", nil },
-}
-
-@(init)
-shell_surface_interface_init :: proc() {
-    shell_surface_interface.method_count = len(shell_surface_requests)
-    shell_surface_interface.methods = &shell_surface_requests[0]
-    shell_surface_interface.event_count = len(shell_surface_events)
-    shell_surface_interface.events = &shell_surface_events[0]
 }
 
 /*
@@ -635,29 +627,37 @@ shell_surface_interface := Interface{
     nil,
 }
 
+@(init)
+shell_surface_interface_init :: proc() {
+    shell_surface_interface.method_count = len(shell_surface_requests)
+    shell_surface_interface.methods = &shell_surface_requests[0]
+    shell_surface_interface.event_count = len(shell_surface_events)
+    shell_surface_interface.events = &shell_surface_events[0]
+}
+
 surface_interfaces := [?]^Interface{
- &buffer_interface,
- nil,
- nil,
- nil,
- nil,
- nil,
- nil,
- &callback_interface,
- &region_interface,
- &region_interface,
- nil,
- nil,
- nil,
- nil,
- nil,
- nil,
- nil,
- nil,
- &output_interface,
- &output_interface,
- nil,
- nil,
+    &buffer_interface,
+    nil,
+    nil,
+    nil,
+    nil,
+    nil,
+    nil,
+    &callback_interface,
+    &region_interface,
+    &region_interface,
+    nil,
+    nil,
+    nil,
+    nil,
+    nil,
+    nil,
+    nil,
+    nil,
+    &output_interface,
+    &output_interface,
+    nil,
+    nil,
 }
 
 surface_requests := [?]Message{
@@ -679,14 +679,6 @@ surface_events := [?]Message{
     { "leave", "o", &surface_interfaces[19] },
     { "preferred_buffer_scale", "i", &surface_interfaces[20] },
     { "preferred_buffer_transform", "u", &surface_interfaces[21] },
-}
-
-@(init)
-surface_interface_init :: proc() {
-    surface_interface.method_count = len(surface_requests)
-    surface_interface.methods = &surface_requests[0]
-    surface_interface.event_count = len(surface_events)
-    surface_interface.events = &surface_events[0]
 }
 
 /*
@@ -743,12 +735,20 @@ surface_interface := Interface{
     nil,
 }
 
+@(init)
+surface_interface_init :: proc() {
+    surface_interface.method_count = len(surface_requests)
+    surface_interface.methods = &surface_requests[0]
+    surface_interface.event_count = len(surface_events)
+    surface_interface.events = &surface_events[0]
+}
+
 seat_interfaces := [?]^Interface{
- &pointer_interface,
- &keyboard_interface,
- &touch_interface,
- nil,
- nil,
+    &pointer_interface,
+    &keyboard_interface,
+    &touch_interface,
+    nil,
+    nil,
 }
 
 seat_requests := [?]Message{
@@ -761,14 +761,6 @@ seat_requests := [?]Message{
 seat_events := [?]Message{
     { "capabilities", "u", &seat_interfaces[3] },
     { "name", "s", &seat_interfaces[4] },
-}
-
-@(init)
-seat_interface_init :: proc() {
-    seat_interface.method_count = len(seat_requests)
-    seat_interface.methods = &seat_requests[0]
-    seat_interface.event_count = len(seat_events)
-    seat_interface.events = &seat_events[0]
 }
 
 /*
@@ -787,36 +779,44 @@ seat_interface := Interface{
     nil,
 }
 
+@(init)
+seat_interface_init :: proc() {
+    seat_interface.method_count = len(seat_requests)
+    seat_interface.methods = &seat_requests[0]
+    seat_interface.event_count = len(seat_events)
+    seat_interface.events = &seat_events[0]
+}
+
 pointer_interfaces := [?]^Interface{
- nil,
- &surface_interface,
- nil,
- nil,
- nil,
- &surface_interface,
- nil,
- nil,
- nil,
- &surface_interface,
- nil,
- nil,
- nil,
- nil,
- nil,
- nil,
- nil,
- nil,
- nil,
- nil,
- nil,
- nil,
- nil,
- nil,
- nil,
- nil,
- nil,
- nil,
- nil,
+    nil,
+    &surface_interface,
+    nil,
+    nil,
+    nil,
+    &surface_interface,
+    nil,
+    nil,
+    nil,
+    &surface_interface,
+    nil,
+    nil,
+    nil,
+    nil,
+    nil,
+    nil,
+    nil,
+    nil,
+    nil,
+    nil,
+    nil,
+    nil,
+    nil,
+    nil,
+    nil,
+    nil,
+    nil,
+    nil,
+    nil,
 }
 
 pointer_requests := [?]Message{
@@ -836,14 +836,6 @@ pointer_events := [?]Message{
     { "axis_discrete", "ui", &pointer_interfaces[23] },
     { "axis_value120", "ui", &pointer_interfaces[25] },
     { "axis_relative_direction", "uu", &pointer_interfaces[27] },
-}
-
-@(init)
-pointer_interface_init :: proc() {
-    pointer_interface.method_count = len(pointer_requests)
-    pointer_interface.methods = &pointer_requests[0]
-    pointer_interface.event_count = len(pointer_events)
-    pointer_interface.events = &pointer_events[0]
 }
 
 /*
@@ -866,26 +858,34 @@ pointer_interface := Interface{
     nil,
 }
 
+@(init)
+pointer_interface_init :: proc() {
+    pointer_interface.method_count = len(pointer_requests)
+    pointer_interface.methods = &pointer_requests[0]
+    pointer_interface.event_count = len(pointer_events)
+    pointer_interface.events = &pointer_events[0]
+}
+
 keyboard_interfaces := [?]^Interface{
- nil,
- nil,
- nil,
- nil,
- &surface_interface,
- nil,
- nil,
- &surface_interface,
- nil,
- nil,
- nil,
- nil,
- nil,
- nil,
- nil,
- nil,
- nil,
- nil,
- nil,
+    nil,
+    nil,
+    nil,
+    nil,
+    &surface_interface,
+    nil,
+    nil,
+    &surface_interface,
+    nil,
+    nil,
+    nil,
+    nil,
+    nil,
+    nil,
+    nil,
+    nil,
+    nil,
+    nil,
+    nil,
 }
 
 keyboard_requests := [?]Message{
@@ -899,14 +899,6 @@ keyboard_events := [?]Message{
     { "key", "uuuu", &keyboard_interfaces[8] },
     { "modifiers", "uuuuu", &keyboard_interfaces[12] },
     { "repeat_info", "ii", &keyboard_interfaces[17] },
-}
-
-@(init)
-keyboard_interface_init :: proc() {
-    keyboard_interface.method_count = len(keyboard_requests)
-    keyboard_interface.methods = &keyboard_requests[0]
-    keyboard_interface.event_count = len(keyboard_events)
-    keyboard_interface.events = &keyboard_events[0]
 }
 
 /*
@@ -933,25 +925,33 @@ keyboard_interface := Interface{
     nil,
 }
 
+@(init)
+keyboard_interface_init :: proc() {
+    keyboard_interface.method_count = len(keyboard_requests)
+    keyboard_interface.methods = &keyboard_requests[0]
+    keyboard_interface.event_count = len(keyboard_events)
+    keyboard_interface.events = &keyboard_events[0]
+}
+
 touch_interfaces := [?]^Interface{
- nil,
- nil,
- &surface_interface,
- nil,
- nil,
- nil,
- nil,
- nil,
- nil,
- nil,
- nil,
- nil,
- nil,
- nil,
- nil,
- nil,
- nil,
- nil,
+    nil,
+    nil,
+    &surface_interface,
+    nil,
+    nil,
+    nil,
+    nil,
+    nil,
+    nil,
+    nil,
+    nil,
+    nil,
+    nil,
+    nil,
+    nil,
+    nil,
+    nil,
+    nil,
 }
 
 touch_requests := [?]Message{
@@ -966,14 +966,6 @@ touch_events := [?]Message{
     { "cancel", "", nil },
     { "shape", "iff", &touch_interfaces[13] },
     { "orientation", "if", &touch_interfaces[16] },
-}
-
-@(init)
-touch_interface_init :: proc() {
-    touch_interface.method_count = len(touch_requests)
-    touch_interface.methods = &touch_requests[0]
-    touch_interface.event_count = len(touch_events)
-    touch_interface.events = &touch_events[0]
 }
 
 /*
@@ -996,22 +988,30 @@ touch_interface := Interface{
     nil,
 }
 
+@(init)
+touch_interface_init :: proc() {
+    touch_interface.method_count = len(touch_requests)
+    touch_interface.methods = &touch_requests[0]
+    touch_interface.event_count = len(touch_events)
+    touch_interface.events = &touch_events[0]
+}
+
 output_interfaces := [?]^Interface{
- nil,
- nil,
- nil,
- nil,
- nil,
- nil,
- nil,
- nil,
- nil,
- nil,
- nil,
- nil,
- nil,
- nil,
- nil,
+    nil,
+    nil,
+    nil,
+    nil,
+    nil,
+    nil,
+    nil,
+    nil,
+    nil,
+    nil,
+    nil,
+    nil,
+    nil,
+    nil,
+    nil,
 }
 
 output_requests := [?]Message{
@@ -1025,14 +1025,6 @@ output_events := [?]Message{
     { "scale", "i", &output_interfaces[12] },
     { "name", "s", &output_interfaces[13] },
     { "description", "s", &output_interfaces[14] },
-}
-
-@(init)
-output_interface_init :: proc() {
-    output_interface.method_count = len(output_requests)
-    output_interface.methods = &output_requests[0]
-    output_interface.event_count = len(output_events)
-    output_interface.events = &output_events[0]
 }
 
 /*
@@ -1053,15 +1045,23 @@ output_interface := Interface{
     nil,
 }
 
+@(init)
+output_interface_init :: proc() {
+    output_interface.method_count = len(output_requests)
+    output_interface.methods = &output_requests[0]
+    output_interface.event_count = len(output_events)
+    output_interface.events = &output_events[0]
+}
+
 region_interfaces := [?]^Interface{
- nil,
- nil,
- nil,
- nil,
- nil,
- nil,
- nil,
- nil,
+    nil,
+    nil,
+    nil,
+    nil,
+    nil,
+    nil,
+    nil,
+    nil,
 }
 
 region_requests := [?]Message{
@@ -1070,12 +1070,6 @@ region_requests := [?]Message{
     { "subtract", "iiii", &region_interfaces[4] },
 }
 
-
-@(init)
-region_interface_init :: proc() {
-    region_interface.method_count = len(region_requests)
-    region_interface.methods = &region_requests[0]
-}
 
 /*
  * region interface
@@ -1093,10 +1087,16 @@ region_interface := Interface{
     nil,
 }
 
+@(init)
+region_interface_init :: proc() {
+    region_interface.method_count = len(region_requests)
+    region_interface.methods = &region_requests[0]
+}
+
 subcompositor_interfaces := [?]^Interface{
- &subsurface_interface,
- &surface_interface,
- &surface_interface,
+    &subsurface_interface,
+    &surface_interface,
+    &surface_interface,
 }
 
 subcompositor_requests := [?]Message{
@@ -1104,12 +1104,6 @@ subcompositor_requests := [?]Message{
     { "get_subsurface", "noo", &subcompositor_interfaces[0] },
 }
 
-
-@(init)
-subcompositor_interface_init :: proc() {
-    subcompositor_interface.method_count = len(subcompositor_requests)
-    subcompositor_interface.methods = &subcompositor_requests[0]
-}
 
 /*
  * sub-surface compositing
@@ -1142,11 +1136,17 @@ subcompositor_interface := Interface{
     nil,
 }
 
+@(init)
+subcompositor_interface_init :: proc() {
+    subcompositor_interface.method_count = len(subcompositor_requests)
+    subcompositor_interface.methods = &subcompositor_requests[0]
+}
+
 subsurface_interfaces := [?]^Interface{
- nil,
- nil,
- &surface_interface,
- &surface_interface,
+    nil,
+    nil,
+    &surface_interface,
+    &surface_interface,
 }
 
 subsurface_requests := [?]Message{
@@ -1158,12 +1158,6 @@ subsurface_requests := [?]Message{
     { "set_desync", "", nil },
 }
 
-
-@(init)
-subsurface_interface_init :: proc() {
-    subsurface_interface.method_count = len(subsurface_requests)
-    subsurface_interface.methods = &subsurface_requests[0]
-}
 
 /*
  * sub-surface interface to a wl_surface
@@ -1229,8 +1223,14 @@ subsurface_interface := Interface{
     nil,
 }
 
+@(init)
+subsurface_interface_init :: proc() {
+    subsurface_interface.method_count = len(subsurface_requests)
+    subsurface_interface.methods = &subsurface_requests[0]
+}
+
 fixes_interfaces := [?]^Interface{
- &registry_interface,
+    &registry_interface,
 }
 
 fixes_requests := [?]Message{
@@ -1238,12 +1238,6 @@ fixes_requests := [?]Message{
     { "destroy_registry", "o", &fixes_interfaces[0] },
 }
 
-
-@(init)
-fixes_interface_init :: proc() {
-    fixes_interface.method_count = len(fixes_requests)
-    fixes_interface.methods = &fixes_requests[0]
-}
 
 /*
  * wayland protocol fixes
@@ -1257,6 +1251,12 @@ fixes_interface := Interface{
     nil,
     0,
     nil,
+}
+
+@(init)
+fixes_interface_init :: proc() {
+    fixes_interface.method_count = len(fixes_requests)
+    fixes_interface.methods = &fixes_requests[0]
 }
 
 
@@ -1374,7 +1374,7 @@ display_sync :: #force_inline proc(
     return cast(^Callback)proxy_marshal_flags(
         cast(^Proxy)display,
         DISPLAY_SYNC,
-        &display_interface,
+        &callback_interface,
         proxy_get_version(cast(^Proxy)display),
         {},
         nil,
@@ -1399,7 +1399,7 @@ display_get_registry :: #force_inline proc(
     return cast(^Registry)proxy_marshal_flags(
         cast(^Proxy)display,
         DISPLAY_GET_REGISTRY,
-        &display_interface,
+        &registry_interface,
         proxy_get_version(cast(^Proxy)display),
         {},
         nil,
@@ -1496,13 +1496,13 @@ registry_bind :: #force_inline proc(
     return cast(rawptr)proxy_marshal_flags(
         cast(^Proxy)registry,
         REGISTRY_BIND,
-        &registry_interface,
+        interface,
         version,
         {},
         name,
+        interface.name,
+        version,
         nil,
-    interface.name,
-    version,
     )
 }
 
@@ -1572,7 +1572,7 @@ compositor_create_surface :: #force_inline proc(
     return cast(^Surface)proxy_marshal_flags(
         cast(^Proxy)compositor,
         COMPOSITOR_CREATE_SURFACE,
-        &compositor_interface,
+        &surface_interface,
         proxy_get_version(cast(^Proxy)compositor),
         {},
         nil,
@@ -1589,7 +1589,7 @@ compositor_create_region :: #force_inline proc(
     return cast(^Region)proxy_marshal_flags(
         cast(^Proxy)compositor,
         COMPOSITOR_CREATE_REGION,
-        &compositor_interface,
+        &region_interface,
         proxy_get_version(cast(^Proxy)compositor),
         {},
         nil,
@@ -1655,7 +1655,7 @@ shm_pool_create_buffer :: #force_inline proc(
     return cast(^Buffer)proxy_marshal_flags(
         cast(^Proxy)shm_pool,
         SHM_POOL_CREATE_BUFFER,
-        &shm_pool_interface,
+        &buffer_interface,
         proxy_get_version(cast(^Proxy)shm_pool),
         {},
         nil,
@@ -2224,7 +2224,7 @@ Shm_Listener :: struct{
         /*
          * buffer pixel format
          */
-        format: u32,
+        format: Shm_Format,
     ),
 
 }
@@ -2274,7 +2274,7 @@ shm_create_pool :: #force_inline proc(
     return cast(^Shm_Pool)proxy_marshal_flags(
         cast(^Proxy)shm,
         SHM_CREATE_POOL,
-        &shm_interface,
+        &shm_pool_interface,
         proxy_get_version(cast(^Proxy)shm),
         {},
         nil,
@@ -2415,7 +2415,7 @@ Data_Offer_Listener :: struct{
         /*
          * actions offered by the data source
          */
-        source_actions: u32,
+        source_actions: Data_Device_Manager_Dnd_Action_Flags,
     ),
 
     /*
@@ -2462,7 +2462,7 @@ Data_Offer_Listener :: struct{
         /*
          * action selected by the compositor
          */
-        dnd_action: u32,
+        dnd_action: Data_Device_Manager_Dnd_Action_Flags,
     ),
 
 }
@@ -2814,7 +2814,7 @@ Data_Source_Listener :: struct{
         /*
          * action selected by the compositor
          */
-        dnd_action: u32,
+        dnd_action: Data_Device_Manager_Dnd_Action_Flags,
     ),
 
 }
@@ -2944,7 +2944,7 @@ Data_Device_Listener :: struct{
         /*
          * the new data_offer object
          */
-        id: rawptr,
+        id: ^Data_Offer,
     ),
 
     /*
@@ -2964,7 +2964,7 @@ Data_Device_Listener :: struct{
         /*
          * client surface entered
          */
-        surface: ^Object,
+        surface: ^Surface,
         /*
          * surface-local x coordinate
          */
@@ -2976,7 +2976,7 @@ Data_Device_Listener :: struct{
         /*
          * source data_offer object
          */
-        id: ^Object,
+        id: ^Data_Offer,
     ),
 
     /*
@@ -3056,7 +3056,7 @@ Data_Device_Listener :: struct{
         /*
          * selection data_offer object
          */
-        id: ^Object,
+        id: ^Data_Offer,
     ),
 
 }
@@ -3272,7 +3272,7 @@ data_device_manager_create_data_source :: #force_inline proc(
     return cast(^Data_Source)proxy_marshal_flags(
         cast(^Proxy)data_device_manager,
         DATA_DEVICE_MANAGER_CREATE_DATA_SOURCE,
-        &data_device_manager_interface,
+        &data_source_interface,
         proxy_get_version(cast(^Proxy)data_device_manager),
         {},
         nil,
@@ -3293,7 +3293,7 @@ data_device_manager_get_data_device :: #force_inline proc(
     return cast(^Data_Device)proxy_marshal_flags(
         cast(^Proxy)data_device_manager,
         DATA_DEVICE_MANAGER_GET_DATA_DEVICE,
-        &data_device_manager_interface,
+        &data_device_interface,
         proxy_get_version(cast(^Proxy)data_device_manager),
         {},
         nil,
@@ -3343,7 +3343,7 @@ shell_get_shell_surface :: #force_inline proc(
     return cast(^Shell_Surface)proxy_marshal_flags(
         cast(^Proxy)shell,
         SHELL_GET_SHELL_SURFACE,
-        &shell_interface,
+        &shell_surface_interface,
         proxy_get_version(cast(^Proxy)shell),
         {},
         nil,
@@ -3478,7 +3478,7 @@ Shell_Surface_Listener :: struct{
         /*
          * how the surface was resized
          */
-        edges: u32,
+        edges: Shell_Surface_Resize_Flags,
         /*
          * new width of the surface
          */
@@ -3941,7 +3941,7 @@ Surface_Listener :: struct{
         /*
          * output entered by the surface
          */
-        output: ^Object,
+        output: ^Output,
     ),
 
     /*
@@ -3962,7 +3962,7 @@ Surface_Listener :: struct{
         /*
          * output left by the surface
          */
-        output: ^Object,
+        output: ^Output,
     ),
 
     /*
@@ -4007,7 +4007,7 @@ Surface_Listener :: struct{
         /*
          * preferred transform
          */
-        transform: u32,
+        transform: Output_Transform,
     ),
 
 }
@@ -4251,7 +4251,7 @@ surface_frame :: #force_inline proc(
     return cast(^Callback)proxy_marshal_flags(
         cast(^Proxy)surface,
         SURFACE_FRAME,
-        &surface_interface,
+        &callback_interface,
         proxy_get_version(cast(^Proxy)surface),
         {},
         nil,
@@ -4646,7 +4646,7 @@ Seat_Listener :: struct{
         /*
          * capabilities of the seat
          */
-        capabilities: u32,
+        capabilities: Seat_Capability_Flags,
     ),
 
     /*
@@ -4721,7 +4721,7 @@ seat_get_pointer :: #force_inline proc(
     return cast(^Pointer)proxy_marshal_flags(
         cast(^Proxy)seat,
         SEAT_GET_POINTER,
-        &seat_interface,
+        &pointer_interface,
         proxy_get_version(cast(^Proxy)seat),
         {},
         nil,
@@ -4745,7 +4745,7 @@ seat_get_keyboard :: #force_inline proc(
     return cast(^Keyboard)proxy_marshal_flags(
         cast(^Proxy)seat,
         SEAT_GET_KEYBOARD,
-        &seat_interface,
+        &keyboard_interface,
         proxy_get_version(cast(^Proxy)seat),
         {},
         nil,
@@ -4769,7 +4769,7 @@ seat_get_touch :: #force_inline proc(
     return cast(^Touch)proxy_marshal_flags(
         cast(^Proxy)seat,
         SEAT_GET_TOUCH,
-        &seat_interface,
+        &touch_interface,
         proxy_get_version(cast(^Proxy)seat),
         {},
         nil,
@@ -4906,7 +4906,7 @@ Pointer_Listener :: struct{
         /*
          * surface entered by the pointer
          */
-        surface: ^Object,
+        surface: ^Surface,
         /*
          * surface-local x coordinate
          */
@@ -4935,7 +4935,7 @@ Pointer_Listener :: struct{
         /*
          * surface left by the pointer
          */
-        surface: ^Object,
+        surface: ^Surface,
     ),
 
     /*
@@ -4996,7 +4996,7 @@ Pointer_Listener :: struct{
         /*
          * physical state of the button
          */
-        state: u32,
+        state: Pointer_Button_State,
     ),
 
     /*
@@ -5028,7 +5028,7 @@ Pointer_Listener :: struct{
         /*
          * axis type
          */
-        axis: u32,
+        axis: Pointer_Axis,
         /*
          * length of vector in surface-local coordinate space
          */
@@ -5111,7 +5111,7 @@ Pointer_Listener :: struct{
         /*
          * source of the axis event
          */
-        axis_source: u32,
+        axis_source: Pointer_Axis_Source,
     ),
 
     /*
@@ -5141,7 +5141,7 @@ Pointer_Listener :: struct{
         /*
          * the axis stopped with this event
          */
-        axis: u32,
+        axis: Pointer_Axis,
     ),
 
     /*
@@ -5183,7 +5183,7 @@ Pointer_Listener :: struct{
         /*
          * axis type
          */
-        axis: u32,
+        axis: Pointer_Axis,
         /*
          * number of steps
          */
@@ -5220,7 +5220,7 @@ Pointer_Listener :: struct{
         /*
          * axis type
          */
-        axis: u32,
+        axis: Pointer_Axis,
         /*
          * scroll distance as fraction of 120
          */
@@ -5271,11 +5271,11 @@ Pointer_Listener :: struct{
         /*
          * axis type
          */
-        axis: u32,
+        axis: Pointer_Axis,
         /*
          * physical direction relative to axis motion
          */
-        direction: u32,
+        direction: Pointer_Axis_Relative_Direction,
     ),
 
 }
@@ -5451,7 +5451,7 @@ Keyboard_Listener :: struct{
         /*
          * keymap format
          */
-        format: u32,
+        format: Keyboard_Keymap_Format,
         /*
          * keymap file descriptor
          */
@@ -5488,7 +5488,7 @@ Keyboard_Listener :: struct{
         /*
          * surface gaining keyboard focus
          */
-        surface: ^Object,
+        surface: ^Surface,
         /*
          * the keys currently logically down
          */
@@ -5518,7 +5518,7 @@ Keyboard_Listener :: struct{
         /*
          * surface that lost keyboard focus
          */
-        surface: ^Object,
+        surface: ^Surface,
     ),
 
     /*
@@ -5565,7 +5565,7 @@ Keyboard_Listener :: struct{
         /*
          * physical state of the key
          */
-        state: u32,
+        state: Keyboard_Key_State,
     ),
 
     /*
@@ -5699,7 +5699,7 @@ Touch_Listener :: struct{
         /*
          * surface touched
          */
-        surface: ^Object,
+        surface: ^Surface,
         /*
          * the unique ID of this touch point
          */
@@ -6061,7 +6061,7 @@ Output_Listener :: struct{
         /*
          * subpixel orientation of the output
          */
-        subpixel: i32,
+        subpixel: Output_Subpixel,
         /*
          * textual description of the manufacturer
          */
@@ -6073,7 +6073,7 @@ Output_Listener :: struct{
         /*
          * additional transformation applied to buffer contents during presentation
          */
-        transform: i32,
+        transform: Output_Transform,
     ),
 
     /*
@@ -6118,7 +6118,7 @@ Output_Listener :: struct{
         /*
          * bitfield of mode flags
          */
-        flags: u32,
+        flags: Output_Mode_Flags,
         /*
          * width of the mode in hardware units
          */
@@ -6473,7 +6473,7 @@ subcompositor_get_subsurface :: #force_inline proc(
     return cast(^Subsurface)proxy_marshal_flags(
         cast(^Proxy)subcompositor,
         SUBCOMPOSITOR_GET_SUBSURFACE,
-        &subcompositor_interface,
+        &subsurface_interface,
         proxy_get_version(cast(^Proxy)subcompositor),
         {},
         nil,

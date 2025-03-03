@@ -7,11 +7,11 @@ Xdg_Toplevel :: struct{}
 Xdg_Popup :: struct{}
 
 xdg_wm_base_interfaces := [?]^Interface{
- &xdg_positioner_interface,
- &xdg_surface_interface,
- &surface_interface,
- nil,
- nil,
+    &xdg_positioner_interface,
+    &xdg_surface_interface,
+    &surface_interface,
+    nil,
+    nil,
 }
 
 xdg_wm_base_requests := [?]Message{
@@ -23,14 +23,6 @@ xdg_wm_base_requests := [?]Message{
 
 xdg_wm_base_events := [?]Message{
     { "ping", "u", &xdg_wm_base_interfaces[4] },
-}
-
-@(init)
-xdg_wm_base_interface_init :: proc() {
-    xdg_wm_base_interface.method_count = len(xdg_wm_base_requests)
-    xdg_wm_base_interface.methods = &xdg_wm_base_requests[0]
-    xdg_wm_base_interface.event_count = len(xdg_wm_base_events)
-    xdg_wm_base_interface.events = &xdg_wm_base_events[0]
 }
 
 /*
@@ -50,21 +42,29 @@ xdg_wm_base_interface := Interface{
     nil,
 }
 
+@(init)
+xdg_wm_base_interface_init :: proc() {
+    xdg_wm_base_interface.method_count = len(xdg_wm_base_requests)
+    xdg_wm_base_interface.methods = &xdg_wm_base_requests[0]
+    xdg_wm_base_interface.event_count = len(xdg_wm_base_events)
+    xdg_wm_base_interface.events = &xdg_wm_base_events[0]
+}
+
 xdg_positioner_interfaces := [?]^Interface{
- nil,
- nil,
- nil,
- nil,
- nil,
- nil,
- nil,
- nil,
- nil,
- nil,
- nil,
- nil,
- nil,
- nil,
+    nil,
+    nil,
+    nil,
+    nil,
+    nil,
+    nil,
+    nil,
+    nil,
+    nil,
+    nil,
+    nil,
+    nil,
+    nil,
+    nil,
 }
 
 xdg_positioner_requests := [?]Message{
@@ -80,12 +80,6 @@ xdg_positioner_requests := [?]Message{
     { "set_parent_configure", "u", &xdg_positioner_interfaces[13] },
 }
 
-
-@(init)
-xdg_positioner_interface_init :: proc() {
-    xdg_positioner_interface.method_count = len(xdg_positioner_requests)
-    xdg_positioner_interface.methods = &xdg_positioner_requests[0]
-}
 
 /*
  * child surface positioner
@@ -118,17 +112,23 @@ xdg_positioner_interface := Interface{
     nil,
 }
 
+@(init)
+xdg_positioner_interface_init :: proc() {
+    xdg_positioner_interface.method_count = len(xdg_positioner_requests)
+    xdg_positioner_interface.methods = &xdg_positioner_requests[0]
+}
+
 xdg_surface_interfaces := [?]^Interface{
- &xdg_toplevel_interface,
- &xdg_popup_interface,
- &xdg_surface_interface,
- &xdg_positioner_interface,
- nil,
- nil,
- nil,
- nil,
- nil,
- nil,
+    &xdg_toplevel_interface,
+    &xdg_popup_interface,
+    &xdg_surface_interface,
+    &xdg_positioner_interface,
+    nil,
+    nil,
+    nil,
+    nil,
+    nil,
+    nil,
 }
 
 xdg_surface_requests := [?]Message{
@@ -141,14 +141,6 @@ xdg_surface_requests := [?]Message{
 
 xdg_surface_events := [?]Message{
     { "configure", "u", &xdg_surface_interfaces[9] },
-}
-
-@(init)
-xdg_surface_interface_init :: proc() {
-    xdg_surface_interface.method_count = len(xdg_surface_requests)
-    xdg_surface_interface.methods = &xdg_surface_requests[0]
-    xdg_surface_interface.event_count = len(xdg_surface_events)
-    xdg_surface_interface.events = &xdg_surface_events[0]
 }
 
 /*
@@ -211,30 +203,38 @@ xdg_surface_interface := Interface{
     nil,
 }
 
+@(init)
+xdg_surface_interface_init :: proc() {
+    xdg_surface_interface.method_count = len(xdg_surface_requests)
+    xdg_surface_interface.methods = &xdg_surface_requests[0]
+    xdg_surface_interface.event_count = len(xdg_surface_events)
+    xdg_surface_interface.events = &xdg_surface_events[0]
+}
+
 xdg_toplevel_interfaces := [?]^Interface{
- &xdg_toplevel_interface,
- nil,
- nil,
- &seat_interface,
- nil,
- nil,
- nil,
- &seat_interface,
- nil,
- &seat_interface,
- nil,
- nil,
- nil,
- nil,
- nil,
- nil,
- &output_interface,
- nil,
- nil,
- nil,
- nil,
- nil,
- nil,
+    &xdg_toplevel_interface,
+    nil,
+    nil,
+    &seat_interface,
+    nil,
+    nil,
+    nil,
+    &seat_interface,
+    nil,
+    &seat_interface,
+    nil,
+    nil,
+    nil,
+    nil,
+    nil,
+    nil,
+    &output_interface,
+    nil,
+    nil,
+    nil,
+    nil,
+    nil,
+    nil,
 }
 
 xdg_toplevel_requests := [?]Message{
@@ -259,14 +259,6 @@ xdg_toplevel_events := [?]Message{
     { "close", "", nil },
     { "configure_bounds", "ii", &xdg_toplevel_interfaces[20] },
     { "wm_capabilities", "a", &xdg_toplevel_interfaces[22] },
-}
-
-@(init)
-xdg_toplevel_interface_init :: proc() {
-    xdg_toplevel_interface.method_count = len(xdg_toplevel_requests)
-    xdg_toplevel_interface.methods = &xdg_toplevel_requests[0]
-    xdg_toplevel_interface.event_count = len(xdg_toplevel_events)
-    xdg_toplevel_interface.events = &xdg_toplevel_events[0]
 }
 
 /*
@@ -302,16 +294,24 @@ xdg_toplevel_interface := Interface{
     nil,
 }
 
+@(init)
+xdg_toplevel_interface_init :: proc() {
+    xdg_toplevel_interface.method_count = len(xdg_toplevel_requests)
+    xdg_toplevel_interface.methods = &xdg_toplevel_requests[0]
+    xdg_toplevel_interface.event_count = len(xdg_toplevel_events)
+    xdg_toplevel_interface.events = &xdg_toplevel_events[0]
+}
+
 xdg_popup_interfaces := [?]^Interface{
- &seat_interface,
- nil,
- &xdg_positioner_interface,
- nil,
- nil,
- nil,
- nil,
- nil,
- nil,
+    &seat_interface,
+    nil,
+    &xdg_positioner_interface,
+    nil,
+    nil,
+    nil,
+    nil,
+    nil,
+    nil,
 }
 
 xdg_popup_requests := [?]Message{
@@ -324,14 +324,6 @@ xdg_popup_events := [?]Message{
     { "configure", "iiii", &xdg_popup_interfaces[4] },
     { "popup_done", "", nil },
     { "repositioned", "u", &xdg_popup_interfaces[8] },
-}
-
-@(init)
-xdg_popup_interface_init :: proc() {
-    xdg_popup_interface.method_count = len(xdg_popup_requests)
-    xdg_popup_interface.methods = &xdg_popup_requests[0]
-    xdg_popup_interface.event_count = len(xdg_popup_events)
-    xdg_popup_interface.events = &xdg_popup_events[0]
 }
 
 /*
@@ -368,6 +360,14 @@ xdg_popup_interface := Interface{
     nil,
     0,
     nil,
+}
+
+@(init)
+xdg_popup_interface_init :: proc() {
+    xdg_popup_interface.method_count = len(xdg_popup_requests)
+    xdg_popup_interface.methods = &xdg_popup_requests[0]
+    xdg_popup_interface.event_count = len(xdg_popup_events)
+    xdg_popup_interface.events = &xdg_popup_events[0]
 }
 
 
@@ -487,7 +487,7 @@ xdg_wm_base_create_positioner :: #force_inline proc(
     return cast(^Xdg_Positioner)proxy_marshal_flags(
         cast(^Proxy)xdg_wm_base,
         XDG_WM_BASE_CREATE_POSITIONER,
-        &xdg_wm_base_interface,
+        &xdg_positioner_interface,
         proxy_get_version(cast(^Proxy)xdg_wm_base),
         {},
         nil,
@@ -517,7 +517,7 @@ xdg_wm_base_get_xdg_surface :: #force_inline proc(
     return cast(^Xdg_Surface)proxy_marshal_flags(
         cast(^Proxy)xdg_wm_base,
         XDG_WM_BASE_GET_XDG_SURFACE,
-        &xdg_wm_base_interface,
+        &xdg_surface_interface,
         proxy_get_version(cast(^Proxy)xdg_wm_base),
         {},
         nil,
@@ -1104,7 +1104,7 @@ xdg_surface_get_toplevel :: #force_inline proc(
     return cast(^Xdg_Toplevel)proxy_marshal_flags(
         cast(^Proxy)xdg_surface,
         XDG_SURFACE_GET_TOPLEVEL,
-        &xdg_surface_interface,
+        &xdg_toplevel_interface,
         proxy_get_version(cast(^Proxy)xdg_surface),
         {},
         nil,
@@ -1130,7 +1130,7 @@ xdg_surface_get_popup :: #force_inline proc(
     return cast(^Xdg_Popup)proxy_marshal_flags(
         cast(^Proxy)xdg_surface,
         XDG_SURFACE_GET_POPUP,
-        &xdg_surface_interface,
+        &xdg_popup_interface,
         proxy_get_version(cast(^Proxy)xdg_surface),
         {},
         nil,
