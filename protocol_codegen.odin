@@ -359,7 +359,7 @@ parse_interface :: proc(doc: ^xml.Document, elem: ^xml.Element) -> (iface: Inter
     return
 }
 
-ADD_LISTENER_TMPL :: `%[0]s_add_listener :: #force_inline proc(%[0]s: ^%[1]s, listener: ^%[1]s_Listener, data: rawptr) -> i32 {{
+ADD_LISTENER_TMPL :: `%[0]s_add_listener :: #force_inline proc "contextless" (%[0]s: ^%[1]s, listener: ^%[1]s_Listener, data: rawptr) -> i32 {{
     return proxy_add_listener(
         cast(^Proxy)%[0]s,
         rawptr(listener),
@@ -367,18 +367,18 @@ ADD_LISTENER_TMPL :: `%[0]s_add_listener :: #force_inline proc(%[0]s: ^%[1]s, li
     )
 }}`
 
-SET_USER_DATA_TMPL :: `%[0]s_set_user_data :: #force_inline proc(%[0]s: ^%[1]s, user_data: rawptr) {{
+SET_USER_DATA_TMPL :: `%[0]s_set_user_data :: #force_inline proc "contextless" (%[0]s: ^%[1]s, user_data: rawptr) {{
 	proxy_set_user_data(
         cast(^Proxy)%[0]s,
         user_data
     )
 }}`
 
-GET_USER_DATA_TMPL :: `%[0]s_get_user_data :: #force_inline proc(%[0]s: ^%[1]s) -> rawptr {{
+GET_USER_DATA_TMPL :: `%[0]s_get_user_data :: #force_inline proc "contextless" (%[0]s: ^%[1]s) -> rawptr {{
 	return proxy_get_user_data(cast(^Proxy)%[0]s)
 }}`
 
-GET_VERSION_TMPL :: `%[0]s_get_version :: #force_inline proc(%[0]s: ^%[1]s) -> u32 {{
+GET_VERSION_TMPL :: `%[0]s_get_version :: #force_inline proc "contextless" (%[0]s: ^%[1]s) -> u32 {{
     return proxy_get_version(cast(^Proxy)%[0]s);
 }}`
 
@@ -663,7 +663,7 @@ gen_interface :: proc(ifaces: []Interface, iface: ^Interface) -> (iface_gen: Int
         fmt.sbprintfln(&sb, "%s_Listener :: struct{{", iname_ac)
         for ev in iface.events {
             fmt.sbprint(&sb, get_description(ev.description, level = 1))
-            fmt.sbprintfln(&sb, "    %s: proc(", ev.name)
+            fmt.sbprintfln(&sb, "    %s: proc \"c\" (", ev.name)
             fmt.sbprintln(&sb, "        data: rawptr,")
             fmt.sbprintfln(&sb, "        %s: ^%s,", iname_sc, iname_ac)
             for arg in ev.args {
@@ -698,7 +698,7 @@ gen_interface :: proc(ifaces: []Interface, iface: ^Interface) -> (iface_gen: Int
         rname_ssc := strings.to_screaming_snake_case(req.name) //could error
 
         fmt.sbprint(&sb, get_description(req.description))
-        fmt.sbprintfln(&sb, "%s_%s :: #force_inline proc(", iname_sc, req.name)
+        fmt.sbprintfln(&sb, "%s_%s :: #force_inline proc \"contextless\" (", iname_sc, req.name)
         fmt.sbprintfln(&sb, "    %s: ^%s,", iname_sc, iname_ac)
 
         ret_arg: ^Arg
@@ -710,7 +710,8 @@ gen_interface :: proc(ifaces: []Interface, iface: ^Interface) -> (iface_gen: Int
                 ret_arg = &arg
                 ret_ifc, ret_ifc_exists = ret_arg.interface.(string)
                 if ret_ifc_exists {
-                    ret_ifc_ac = strings.to_ada_case(strings.trim_prefix(ret_ifc, "wl_")) //could error
+                    ret_ifc = strings.trim_prefix(ret_ifc, "wl_")
+                    ret_ifc_ac = strings.to_ada_case(ret_ifc) //could error
                 }
                 continue
             }
