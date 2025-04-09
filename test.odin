@@ -1,5 +1,6 @@
 package main
 
+import "base:runtime"
 import "core:fmt"
 import "core:os"
 import wl "bindings"
@@ -10,13 +11,14 @@ surface: ^wl.Surface
 shell: ^wl.Shell = nil
 shell_surface: ^wl.Shell_Surface
 
-global_registry_handler :: proc(
+global_registry_handler :: proc "c"(
 	data: rawptr,
 	registry: ^wl.Registry,
 	id: u32,
 	interface: cstring,
 	version: u32,
 ) {
+   context = runtime.default_context()
 	fmt.printf("Got a registry event for  %s with id %d \r\n", interface, id)
 	if (interface == "wl_compositor") {
 		compositor =
@@ -29,7 +31,8 @@ global_registry_handler :: proc(
 	}
 }
 
-global_registry_remover :: proc(data: rawptr, registry: ^wl.Registry, id: u32) {
+global_registry_remover :: proc "c"(data: rawptr, registry: ^wl.Registry, id: u32) {
+   context = runtime.default_context()
 	fmt.printf("Got a registry losing event for %d", id)
 }
 
