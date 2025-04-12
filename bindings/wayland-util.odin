@@ -276,7 +276,7 @@ Fixed :: i32
 *
 * \return Floating-point representation of the fixed-point argument
 */
-fixed_to_double :: #force_inline proc(f: Fixed) -> f64 {
+fixed_to_double :: #force_inline proc "contextless" (f: Fixed) -> f64 {
     u: struct #raw_union {
         d: f64,
         i: i64
@@ -294,7 +294,7 @@ fixed_to_double :: #force_inline proc(f: Fixed) -> f64 {
 *
 * \return Fixed-point representation of the floating-point argument
 */
-fixed_from_double :: #force_inline proc(d: f64) -> Fixed {
+fixed_from_double :: #force_inline proc "contextless" (d: f64) -> Fixed {
     u: struct #raw_union {
         d: f64,
         i: i64
@@ -312,7 +312,7 @@ fixed_from_double :: #force_inline proc(d: f64) -> Fixed {
 *
 * \return Integer component of the fixed-point argument
 */
-fixed_to_int :: #force_inline proc(f: Fixed) -> i32 {
+fixed_to_int :: #force_inline proc "contextless" (f: Fixed) -> i32 {
     return f / 256
 }
 
@@ -323,7 +323,7 @@ fixed_to_int :: #force_inline proc(f: Fixed) -> i32 {
 *
 * \return Fixed-point representation of the integer argument
 */
-fixed_from_int :: #force_inline proc(i: i32) -> Fixed {
+fixed_from_int :: #force_inline proc "contextless" (i: i32) -> Fixed {
     return i * 256
 }
 
