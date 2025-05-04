@@ -1,6 +1,6 @@
 package wayland_client
 
-foreign import wl "system:wayland-client"
+foreign import wl_client "system:wayland-client"
 
 /** \class wl_proxy
 *
@@ -91,7 +91,7 @@ Event_Queue :: struct {
 }
 
 @(default_calling_convention="c", link_prefix="wl_")
-foreign wl {
+foreign wl_client {
 	event_queue_destroy                       :: proc(queue: ^Event_Queue) ---
 	proxy_marshal_flags                       :: proc(proxy: ^Proxy, opcode: u32, interface: ^Interface, version: u32, flags: u32, #c_vararg args: ..any) -> ^Proxy ---
 	proxy_marshal_array_flags                 :: proc(proxy: ^Proxy, opcode: u32, interface: ^Interface, version: u32, flags: u32, args: [^]Argument) -> ^Proxy ---
